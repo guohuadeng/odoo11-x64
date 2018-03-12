@@ -24,6 +24,22 @@ var utils = {
         }
     },
     /**
+     * Check if the value is a bin_size or not.
+     * If not, compute an approximate size out of the base64 encoded string.
+     *
+     * @param  {string} value original format
+     * @return {string} bin_size (human-readable)
+     */
+    binaryToBinsize: function (value) {
+        if (!this.is_bin_size(value)) {
+            // Computing approximate size out of base64 encoded string
+            // http://en.wikipedia.org/wiki/Base64#MIME
+            return this.human_size(value.length / 1.37);
+        }
+        // already bin_size
+        return value;
+    },
+    /**
      * Confines a value inside an interval
      *
      * @param {number} [val] the value to confine
@@ -86,28 +102,44 @@ var utils = {
         return "";
     },
     /**
-     * Returns a human readable number
+     * Returns a human readable number (e.g. 34000 -> 34k).
      *
-     * @param {Number} number
+     * @param {number} number
+     * @param {integer} [decimals=0]
+     *        maximum number of decimals to use in human readable representation
+     * @param {integer} [minDigits=1]
+     *        the minimum number of digits to preserve when switching to another
+     *        level of thousands (e.g. with a value of '2', 4321 will still be
+     *        represented as 4321 otherwise it will be down to one digit (4k))
+     * @param {function} [formatterCallback]
+     *        a callback to transform the final number before adding the
+     *        thousands symbol (default to adding thousands separators (useful
+     *        if minDigits > 1))
+     * @returns {string}
      */
-    human_number: function (number, decimals) {
-        decimals = decimals | 0;
+    human_number: function (number, decimals, minDigits, formatterCallback) {
         number = Math.round(number);
+        decimals = decimals | 0;
+        minDigits = minDigits || 1;
+        formatterCallback = formatterCallback || utils.insert_thousand_seps;
+
         var d2 = Math.pow(10, decimals);
-        var val = _t("kMGTPE");
-        var i = val.length-1, s;
-        while( i ) {
-            s = Math.pow(10,i--*3);
-            if( s <= number ) {
-                number = Math.round(number*d2/s)/d2 + val[i];
+        var val = _t('kMGTPE');
+        var symbol = '';
+        for (var i = val.length - 1 ; i > 0 ; i--) {
+            var s = Math.pow(10, i * 3);
+            if (s <= number / Math.pow(10, minDigits - 1)) {
+                number = Math.round(number * d2 / s) / d2;
+                symbol = val[i - 1];
+                break;
             }
         }
-        return number;
+        return formatterCallback('' + number) + symbol;
     },
     /**
      * Returns a human readable size
      *
-     * @param {Number} number of bytes
+     * @param {Number} size number of bytes
      */
     human_size: function (size) {
         var units = _t("Bytes,Kb,Mb,Gb,Tb,Pb,Eb,Zb,Yb").split(',');
@@ -116,7 +148,7 @@ var utils = {
             size /= 1024;
             ++i;
         }
-        return size.toFixed(2) + ' ' + units[i];
+        return size.toFixed(2) + ' ' + units[i].trim();
     },
     /**
      * Insert "thousands" separators in the provided number (which is actually
@@ -196,7 +228,7 @@ var utils = {
      * @returns {boolean}
      */
     is_bin_size: function (v) {
-        return (/^\d+(\.\d*)? \w+$/).test(v);
+        return (/^\d+(\.\d*)? [^0-9]+$/).test(v);
     },
     /**
      * @param {any} node
@@ -271,8 +303,8 @@ var utils = {
     /**
      * performs a half up rounding with a fixed amount of decimals, correcting for float loss of precision
      * See the corresponding float_round() in server/tools/float_utils.py for more info
-     * @param {Number} the value to be rounded
-     * @param {Number} the number of decimals. eg: round_decimals(3.141592,2) -> 3.14
+     * @param {Number} value the value to be rounded
+     * @param {Number} decimals the number of decimals. eg: round_decimals(3.141592,2) -> 3.14
      */
     round_decimals: function (value, decimals) {
         return utils.round_precision(value, Math.pow(10,-decimals));
@@ -319,9 +351,9 @@ var utils = {
     },
     /**
      * Create a cookie
-     * @param {String} name : the name of the cookie
-     * @param {String} value : the value stored in the cookie
-     * @param {Integer} ttl : time to live of the cookie in millis. -1 to erase the cookie.
+     * @param {String} name the name of the cookie
+     * @param {String} value the value stored in the cookie
+     * @param {Integer} ttl time to live of the cookie in millis. -1 to erase the cookie.
      */
     set_cookie: function (name, value, ttl) {
         ttl = ttl || 24*60*60*365;
@@ -331,6 +363,23 @@ var utils = {
             'max-age=' + ttl,
             'expires=' + new Date(new Date().getTime() + ttl*1000).toGMTString()
         ].join(';');
+    },
+    /**
+     * Sort an array in place, keeping the initial order for identical values.
+     *
+     * @param {Array} array
+     * @param {function} iteratee
+     */
+    stableSort: function (array, iteratee) {
+        var stable = array.slice();
+        return array.sort(function stableCompare (a, b) {
+            var order = iteratee(a, b);
+            if (order !== 0) {
+                return order;
+            } else {
+                return stable.indexOf(a) - stable.indexOf(b);
+            }
+        });
     },
     /**
      * @param {any} array
@@ -343,6 +392,23 @@ var utils = {
         array[i2] = elem1;
         array[i1] = elem2;
     },
+
+    /**
+     * @param {string} value
+     * @param {boolean} allow_mailto
+     * @returns boolean
+     */
+    is_email: function (value, allow_mailto) {
+        // http://stackoverflow.com/questions/46155/validate-email-address-in-javascript
+        var re;
+        if (allow_mailto) {
+            re = /^(mailto:)?(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+        } else {
+            re = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+        }
+        return re.test(value);
+    },
+
     /**
      * @param {any} str
      * @param {any} elseValues

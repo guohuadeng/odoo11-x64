@@ -2,7 +2,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.exceptions import UserError, AccessError
-from odoo.tools import pycompat
 
 from .test_sale_common import TestSale
 
@@ -18,14 +17,17 @@ class TestSaleOrder(TestSale):
             'partner_id': self.partner.id,
             'partner_invoice_id': self.partner.id,
             'partner_shipping_id': self.partner.id,
-            'order_line': [(0, 0, {'name': p.name, 'product_id': p.id, 'product_uom_qty': 2, 'product_uom': p.uom_id.id, 'price_unit': p.list_price}) for (_, p) in pycompat.items(self.products)],
+            'order_line': [(0, 0, {'name': p.name, 'product_id': p.id, 'product_uom_qty': 2, 'product_uom': p.uom_id.id, 'price_unit': p.list_price}) for p in self.products.values()],
             'pricelist_id': self.env.ref('product.list0').id,
         })
-        self.assertEqual(so.amount_total, sum([2 * p.list_price for (k, p) in pycompat.items(self.products)]), 'Sale: total amount is wrong')
-
+        self.assertEqual(so.amount_total, sum([2 * p.list_price for p in self.products.values()]), 'Sale: total amount is wrong')
+        so.order_line._compute_product_updatable()
+        self.assertTrue(so.order_line[0].product_updatable)
         # send quotation
         so.force_quotation_send()
         self.assertTrue(so.state == 'sent', 'Sale: state after sending is wrong')
+        so.order_line._compute_product_updatable()
+        self.assertTrue(so.order_line[0].product_updatable)
 
         # confirm quotation
         so.action_confirm()
@@ -36,10 +38,11 @@ class TestSaleOrder(TestSale):
         inv_id = so.action_invoice_create()
         inv = inv_obj.browse(inv_id)
         self.assertEqual(len(inv.invoice_line_ids), 2, 'Sale: invoice is missing lines')
-        self.assertEqual(inv.amount_total, sum([2 * p.list_price if p.invoice_policy == 'order' else 0 for (k, p) in pycompat.items(self.products)]), 'Sale: invoice total amount is wrong')
+        self.assertEqual(inv.amount_total, sum([2 * p.list_price if p.invoice_policy == 'order' else 0 for p in self.products.values()]), 'Sale: invoice total amount is wrong')
         self.assertTrue(so.invoice_status == 'no', 'Sale: SO status after invoicing should be "nothing to invoice"')
         self.assertTrue(len(so.invoice_ids) == 1, 'Sale: invoice is missing')
-
+        so.order_line._compute_product_updatable()
+        self.assertFalse(so.order_line[0].product_updatable)
         # deliver lines except 'time and material' then invoice again
         for line in so.order_line:
             line.qty_delivered = 2 if line.product_id.expense_policy=='no' else 0
@@ -47,7 +50,7 @@ class TestSaleOrder(TestSale):
         inv_id = so.action_invoice_create()
         inv = inv_obj.browse(inv_id)
         self.assertEqual(len(inv.invoice_line_ids), 2, 'Sale: second invoice is missing lines')
-        self.assertEqual(inv.amount_total, sum([2 * p.list_price if p.invoice_policy == 'delivery' else 0 for (k, p) in pycompat.items(self.products)]), 'Sale: second invoice total amount is wrong')
+        self.assertEqual(inv.amount_total, sum([2 * p.list_price if p.invoice_policy == 'delivery' else 0 for p in self.products.values()]), 'Sale: second invoice total amount is wrong')
         self.assertTrue(so.invoice_status == 'invoiced', 'Sale: SO status after invoicing everything should be "invoiced"')
         self.assertTrue(len(so.invoice_ids) == 2, 'Sale: invoice is missing')
         # go over the sold quantity
@@ -72,7 +75,7 @@ class TestSaleOrder(TestSale):
             'partner_id': self.partner.id,
             'partner_invoice_id': self.partner.id,
             'partner_shipping_id': self.partner.id,
-            'order_line': [(0, 0, {'name': p.name, 'product_id': p.id, 'product_uom_qty': 2, 'product_uom': p.uom_id.id, 'price_unit': p.list_price}) for (_, p) in pycompat.items(self.products)],
+            'order_line': [(0, 0, {'name': p.name, 'product_id': p.id, 'product_uom_qty': 2, 'product_uom': p.uom_id.id, 'price_unit': p.list_price}) for p in self.products.values()],
             'pricelist_id': self.env.ref('product.list0').id,
         })
 
@@ -128,7 +131,7 @@ class TestSaleOrder(TestSale):
             'name': '',
             'type': 'in_invoice',
             'partner_id': inv_partner.id,
-            'invoice_line_ids': [(0, 0, {'name': serv_cost.name, 'product_id': serv_cost.id, 'quantity': 2, 'uom_id': serv_cost.uom_id.id, 'price_unit': serv_cost.standard_price, 'account_analytic_id': so.project_id.id, 'account_id': account_income.id})],
+            'invoice_line_ids': [(0, 0, {'name': serv_cost.name, 'product_id': serv_cost.id, 'quantity': 2, 'uom_id': serv_cost.uom_id.id, 'price_unit': serv_cost.standard_price, 'account_analytic_id': so.analytic_account_id.id, 'account_id': account_income.id})],
             'account_id': account_payable.id,
             'journal_id': journal.id,
             'currency_id': company.currency_id.id,

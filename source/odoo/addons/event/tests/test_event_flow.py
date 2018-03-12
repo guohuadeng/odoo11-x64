@@ -7,7 +7,10 @@ from odoo.addons.event.tests.common import TestEventCommon
 from odoo.exceptions import ValidationError, UserError, AccessError
 from odoo.tools import mute_logger
 from odoo.fields import Datetime
-from mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 
 class TestEventFlow(TestEventCommon):
@@ -106,7 +109,7 @@ class TestEventFlow(TestEventCommon):
             (4, self.env.ref('base.group_erp_manager').id)
         ]})
         with self.assertRaises(AccessError):
-            event_config = self.env['event.config.settings'].sudo(self.user_eventmanager).create({
+            event_config = self.env['res.config.settings'].sudo(self.user_eventmanager).create({
             })
             event_config.execute()
 

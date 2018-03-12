@@ -16,7 +16,7 @@ import odoo
 from odoo import api, models
 from odoo.addons.base.ir.ir_http import RequestUID, ModelConverter
 from odoo.http import request
-from odoo.tools import config, ustr
+from odoo.tools import config, ustr, pycompat
 
 _logger = logging.getLogger(__name__)
 
@@ -29,7 +29,19 @@ odoo._geoip_resolver = None
 # Slug API
 # ------------------------------------------------------------
 
-def slugify(s, max_length=None):
+def _guess_mimetype(ext=False, default='text/html'):
+    exts = {
+        '.css': 'text/css',
+        '.less': 'text/less',
+        '.js': 'text/javascript',
+        '.xml': 'text/xml',
+        '.csv': 'text/csv',
+        '.html': 'text/html',
+    }
+    return ext is not False and exts.get(ext, default) or exts
+
+
+def slugify_one(s, max_length=None):
     """ Transform a string to a slug that can be used in a url path.
         This method will first try to do the job with python-slugify if present.
         Otherwise it will process string by stripping leading and ending spaces,
@@ -51,6 +63,21 @@ def slugify(s, max_length=None):
     slug_str = re.sub('[-\s]+', '-', slug_str)
 
     return slug_str[:max_length]
+
+
+def slugify(s, max_length=None, path=False):
+    if not path:
+        return slugify_one(s, max_length=max_length)
+    else:
+        res = []
+        for u in s.split('/'):
+            if slugify_one(u, max_length=max_length) != '':
+                res.append(slugify_one(u, max_length=max_length))
+        # check if supported extension
+        path_no_ext, ext = os.path.splitext(s)
+        if ext and ext in _guess_mimetype():
+            res[-1] = slugify_one(path_no_ext) + ext
+        return '/'.join(res)
 
 
 def slug(value):
@@ -97,36 +124,32 @@ def unslug_url(s):
 # ------------------------------------------------------------
 
 def url_for(path_or_uri, lang=None):
-    if isinstance(path_or_uri, unicode):
-        path_or_uri = path_or_uri.encode('utf-8')
-    current_path = request.httprequest.path
-    if isinstance(current_path, unicode):
-        current_path = current_path.encode('utf-8')
-    location = path_or_uri.strip()
+    current_path = request.httprequest.path     # should already be text
+    location = pycompat.to_text(path_or_uri).strip()
     force_lang = lang is not None
     url = werkzeug.urls.url_parse(location)
 
-    if request and not url.netloc and not url.scheme and (url.path or force_lang):
+    if not url.netloc and not url.scheme and (url.path or force_lang):
         location = werkzeug.urls.url_join(current_path, location)
 
-        lang = lang or request.context.get('lang')
+        lang = pycompat.to_text(lang or request.context.get('lang') or 'en_US')
         langs = [lg[0] for lg in request.env['ir.http']._get_language_codes()]
 
         if (len(langs) > 1 or force_lang) and is_multilang_url(location, langs):
-            ps = location.split('/')
+            ps = location.split(u'/')
             if ps[1] in langs:
                 # Replace the language only if we explicitly provide a language to url_for
                 if force_lang:
-                    ps[1] = lang.encode('utf-8')
+                    ps[1] = lang
                 # Remove the default language unless it's explicitly provided
                 elif ps[1] == request.env['ir.http']._get_default_lang().code:
                     ps.pop(1)
             # Insert the context language or the provided language
             elif lang != request.env['ir.http']._get_default_lang().code or force_lang:
-                ps.insert(1, lang.encode('utf-8'))
-            location = '/'.join(ps)
+                ps.insert(1, lang)
+            location = u'/'.join(ps)
 
-    return location.decode('utf-8')
+    return location
 
 
 def is_multilang_url(local_url, langs=None):
@@ -147,7 +170,9 @@ def is_multilang_url(local_url, langs=None):
         func = router.match(path, method='POST', query_args=query_string)[0]
         return (func.routing.get('website', False) and
                 func.routing.get('multilang', func.routing['type'] == 'http'))
-    except Exception:
+    except werkzeug.exceptions.NotFound:
+        return True
+    except Exception as e:
         return False
 
 
@@ -179,6 +204,16 @@ class IrHttp(models.AbstractModel):
     rerouting_limit = 10
 
     @classmethod
+    def _get_converters(cls):
+        """ Get the converters list for custom url pattern werkzeug need to
+            match Rule. This override adds the website ones.
+        """
+        return dict(
+            super(IrHttp, cls)._get_converters(),
+            model=ModelConverter,
+        )
+
+    @classmethod
     def _get_languages(cls):
         return request.env['res.lang'].search([])
 
@@ -189,7 +224,7 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _get_default_lang(cls):
-        lang_code = request.env['ir.values'].sudo().get_default('res.partner', 'lang')
+        lang_code = request.env['ir.default'].sudo().get('res.partner', 'lang')
         if lang_code:
             return request.env['res.lang'].search([('code', '=', lang_code)], limit=1)
         return request.env['res.lang'].search([], limit=1)
@@ -246,24 +281,19 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _add_dispatch_parameters(cls, func):
-        if request.is_frontend:
-            request.redirect = lambda url, code=302: werkzeug.utils.redirect(url_for(url), code)
+        # only called for is_frontend request
+        if request.routing_iteration == 1:
             context = dict(request.context)
-
-            if not context.get('tz'):
-                context['tz'] = request.session.get('geoip', {}).get('time_zone')
-
             path = request.httprequest.path.split('/')
-            if request.routing_iteration == 1:
-                langs = [lg.code for lg in cls._get_languages()]
-                is_a_bot = cls.is_a_bot()
-                cook_lang = request.httprequest.cookies.get('frontend_lang')
-                nearest_lang = not func and cls.get_nearest_lang(path[1])
-                preferred_lang = ((cook_lang if cook_lang in langs else False)
-                                  or (not is_a_bot and cls.get_nearest_lang(request.lang))
-                                  or cls._get_default_lang().code)
+            langs = [lg.code for lg in cls._get_languages()]
+            is_a_bot = cls.is_a_bot()
+            cook_lang = request.httprequest.cookies.get('frontend_lang')
+            nearest_lang = not func and cls.get_nearest_lang(path[1])
+            preferred_lang = ((cook_lang if cook_lang in langs else False)
+                              or (not is_a_bot and cls.get_nearest_lang(request.lang))
+                              or cls._get_default_lang().code)
 
-                request.lang = context['lang'] = nearest_lang or preferred_lang
+            request.lang = context['lang'] = nearest_lang or preferred_lang
 
             # bind modified context
             request.context = context
@@ -281,10 +311,11 @@ class IrHttp(models.AbstractModel):
         request.routing_iteration = getattr(request, 'routing_iteration', 0) + 1
 
         func = None
+        routing_error = None
         # locate the controller method
         try:
             if request.httprequest.method == 'GET' and '//' in request.httprequest.path:
-                new_url = request.httprequest.path.replace('//', '/') + '?' + request.httprequest.query_string
+                new_url = request.httprequest.path.replace('//', '/') + '?' + request.httprequest.query_string.decode('utf-8')
                 return werkzeug.utils.redirect(new_url, 301)
             rule, arguments = cls._find_handler(return_rule=True)
             func = rule.endpoint
@@ -293,11 +324,11 @@ class IrHttp(models.AbstractModel):
             # either we have a language prefixed route, either a real 404
             # in all cases, website processes them
             request.is_frontend = True
-            request.routing_failed = True
+            routing_error = e
 
         request.is_frontend_multilang = (
             request.is_frontend and
-            func and func.routing.get('multilang', func.routing['type'] == 'http')
+            (not func or (func and func.routing.get('multilang', func.routing['type'] == 'http')))
         )
 
         cls._geoip_setup_resolver()
@@ -338,26 +369,25 @@ class IrHttp(models.AbstractModel):
                     if request.lang != cls._get_default_lang().code:
                         path.insert(1, request.lang)
                     path = '/'.join(path) or '/'
-                    request.routing_failed = False
-                    redirect = request.redirect(path + '?' + request.httprequest.query_string)
+                    routing_error = None
+                    redirect = request.redirect(path + '?' + request.httprequest.query_string.decode('utf-8'))
                     redirect.set_cookie('frontend_lang', request.lang)
                     return redirect
                 elif url_lang:
                     request.uid = None
                     path.pop(1)
-                    request.routing_failed = False
+                    routing_error = None
                     return cls.reroute('/'.join(path) or '/')
 
-            context = dict(request.context)
             if request.lang == cls._get_default_lang().code:
+                context = dict(request.context)
                 context['edit_translations'] = False
-            request.context = context
+                request.context = context
 
-        if getattr(request, 'routing_failed', False):
-            return cls._handle_exception(e)
+        if routing_error:
+            return cls._handle_exception(routing_error)
 
         # removed cache for auth public
-        request.cache_save = False
         result = super(IrHttp, cls)._dispatch()
 
         if request.is_frontend and cook_lang != request.lang and hasattr(result, 'set_cookie'):
@@ -388,8 +418,10 @@ class IrHttp(models.AbstractModel):
         try:
             _, path = rule.build(arguments)
             assert path is not None
+        except odoo.exceptions.MissingError:
+            return cls._handle_exception(werkzeug.exceptions.NotFound())
         except Exception as e:
-            return cls._handle_exception(e, code=404)
+            return cls._handle_exception(e)
 
         if getattr(request, 'is_frontend_multilang', False) and request.httprequest.method in ('GET', 'HEAD'):
             generated_path = werkzeug.url_unquote_plus(path)
@@ -398,5 +430,5 @@ class IrHttp(models.AbstractModel):
                 if request.lang != cls._get_default_lang().code:
                     path = '/' + request.lang + path
                 if request.httprequest.query_string:
-                    path += '?' + request.httprequest.query_string
+                    path += '?' + request.httprequest.query_string.decode('utf-8')
                 return werkzeug.utils.redirect(path, code=301)

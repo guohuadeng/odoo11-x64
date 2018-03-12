@@ -29,10 +29,10 @@
                         <label class="oe_edit_only" for="name" string="Product Name"/>
                         <h1><field name="name" placeholder="Product Name"/></h1>
                         <div name="options" groups="base.group_user">
-                            <div>     
-                                <field name="sale_ok"/>       
-                                <label for="sale_ok"/>        
-                            </div>        
+                            <div>
+                                <field name="sale_ok"/>
+                                <label for="sale_ok"/>
+                            </div>
                             <div>
                                 <field name="purchase_ok"/>
                                 <label for="purchase_ok"/>
@@ -47,10 +47,10 @@
                                     <field name="categ_id" string="Category"/>
                                 </group>
                                 <group name="group_standard_price">
-                                    <field name="list_price" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                                    <field name="list_price" widget='monetary' options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                                     <label for="standard_price" groups="base.group_user" attrs="{'invisible': [('product_variant_count', '&gt;', 1)]}"/>
                                     <div name="standard_price_uom" groups="base.group_user" attrs="{'invisible': [('product_variant_count', '&gt;', 1)]}">
-                                        <field name="standard_price" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                                        <field name="standard_price" widget='monetary' options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                                     </div>
                                     <field name="company_id" groups="base.group_multi_company"
                                         options="{'no_create': True}"/>
@@ -103,6 +103,7 @@
                 </sheet>
                 <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
                     <field name="message_ids" widget="mail_thread"/>
                 </div>
             </form>
@@ -115,7 +116,7 @@
         <field name="arch" type="xml">
             <search string="Product">
                 <field name="name" string="Product" filter_domain="['|','|',('default_code','ilike',self),('name','ilike',self),('barcode','ilike',self)]"/>
-                <field name="categ_id" filter_domain="[('categ_id', 'child_of', self)]"/>
+                <field name="categ_id" filter_domain="[('categ_id', 'child_of', raw_value)]"/>
                 <separator/>
                 <filter string="Services" name="services" domain="[('type','=','service')]"/>
                 <filter string="Products" name="consumable" domain="[('type', 'in', ['consu', 'product'])]"/>
@@ -126,6 +127,15 @@
                 <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
                 <field string="Attributes" name="attribute_line_ids" groups="product.group_product_variant"/>
                 <field name="pricelist_id" widget="selection" context="{'pricelist': self}" filter_domain="[]" groups="product.group_sale_pricelist"/> <!-- Keep widget=selection on this field to pass numeric `self` value, which is not the case for regular m2o widgets! -->
+                <separator/>
+                <filter string="Late Activities" name="activities_overdue"
+                    domain="[('activity_ids.date_deadline', '&lt;', context_today().strftime('%Y-%m-%d'))]"
+                    help="Show all records which has next action date is before today"/>
+                <filter string="Today Activities" name="activities_today"
+                    domain="[('activity_ids.date_deadline', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Future Activities" name="activities_upcoming_all"
+                    domain="[('activity_ids.date_deadline', '&gt;', context_today().strftime('%Y-%m-%d'))
+                    ]"/>
             </search>
         </field>
     </record>
@@ -191,7 +201,7 @@
                         <field name="image_medium" widget="image" class="oe_avatar"/>
                         <div class="oe_title">
                             <label class="oe_edit_only" for="name" string="Product Name"/>
-                            <h1><field name="name" placeholder="e.g. Odoo Enterprise Susbcription"/></h1>
+                            <h1><field name="name" placeholder="e.g. Odoo Enterprise Subscription"/></h1>
                         </div>
                         <group>
                             <p>All general settings about this product are managed on <button name="open_product_template" type="object" string="the product template" class="oe_link"/></p>
@@ -212,8 +222,8 @@
                         <group>
                             <group name="pricing" string="Pricing">
                                 <field name="product_variant_count" invisible="1"/>
-                                <field name="lst_price" widget='monetary' options="{'currency_field': 'currency_id'}" attrs="{'readonly': [('product_variant_count', '&gt;', 1)]}"/>
-                                <field name="standard_price" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                                <field name="lst_price" widget='monetary' options="{'currency_field': 'currency_id', 'field_digits': True}" attrs="{'readonly': [('product_variant_count', '&gt;', 1)]}"/>
+                                <field name="standard_price" widget='monetary' options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                                 <field name="currency_id" invisible='1'/>
                             </group>
                             <group name="weight">
@@ -345,16 +355,16 @@
                     <templates>
                         <t t-name="kanban-box">
                             <div class="oe_kanban_global_click">
-                                <div class="o_kanban_tags_section">
-                                    <field name="attribute_value_ids" groups="product.group_product_variant"/>
-                                </div>
                                 <div class="o_kanban_image">
                                     <img t-att-src="kanban_image('product.product', 'image_small', record.id.raw_value)"/>
                                 </div>
                                 <div class="oe_kanban_details">
-                                    <strong><field name="name"/></strong>
+                                    <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                    <div class="o_kanban_tags_section">
+                                        <field name="attribute_value_ids" groups="product.group_product_variant"/>
+                                    </div>
                                     <ul>
-                                        <li>Price: <field name="lst_price"></field></li>
+                                        <li><strong>Price: <field name="lst_price"></field></strong></li>
                                     </ul>
                                     <div name="tags"/>
                                 </div>
@@ -439,7 +449,7 @@
             </field>
         </record>
         <record id="product_category_action_form" model="ir.actions.act_window">
-            <field name="name">Categories</field>
+            <field name="name">Product Categories</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">product.category</field>
             <field name="view_type">form</field>
@@ -503,7 +513,7 @@
                     <group>
                         <group string="Vendor">
                             <field name="product_variant_count" invisible="1"/>
-                            <field name="product_id" attrs="{'invisible': [('product_variant_count', '&lt;=', 1)]}" groups="product.group_product_variant" domain="[('product_tmpl_id', '=', product_tmpl_id)]"/>
+                            <field name="product_id" groups="product.group_product_variant" domain="[('product_tmpl_id', '=', product_tmpl_id)]"/>
                             <field name="name" context="{'default_customer': 0, 'search_default_supplier': 1, 'default_supplier': 1}"/>
                             <field name="product_name"/>
                             <field name="product_code"/>
@@ -558,7 +568,7 @@
                 <tree string="Vendor Information">
                     <field name="sequence" widget="handle"/>
                     <field name="name"/>
-                    <field name="product_id" invisible="context.get('product_template_invisible_variant', False)"/>
+                    <field name="product_id" invisible="context.get('product_template_invisible_variant', False)" groups="product.group_product_variant"/>
                     <field name="product_tmpl_id" string="Product" invisible="context.get('visible_product_tmpl_id', True)"/>
                     <field name="min_qty"/>
                     <field name="price" string="Price"/>

@@ -91,6 +91,9 @@
         <field name="model">mrp.workorder</field>
         <field name="arch" type="xml">
             <form string="Production Workcenter" delete="0" create="0">
+            <field name="is_user_working" invisible="1"/>
+            <field name="working_state" invisible="1"/>
+            <field name="production_state" invisible="1"/>
             <header>
                 <button name="button_finish" type="object" string="Finish Order" attrs="{'invisible': ['|', ('state', '!=', 'progress'), ('is_produced', '=', False)]}" class="btn-info"/>
                 <button name="button_start" type="object" string="Start Working" attrs="{'invisible': ['|', ('working_state', '=', 'blocked'), ('state', '!=', 'pending')]}"/>
@@ -103,9 +106,6 @@
                 <button name="button_start" type="object" string="Continue Production" attrs="{'invisible': ['|', '|', ('production_state', '=', 'done'), ('working_state', '=', 'blocked'), ('state', '!=', 'done')]}"/>
                 <button name="button_scrap" type="object" string="Scrap" attrs="{'invisible': [('state', 'in', ('confirmed', 'cancel'))]}"/>
                 <field name="state" widget="statusbar" statusbar_visible="pending,ready,progress,done"/>
-                <field name="is_user_working" invisible="1"/>
-                <field name="working_state" invisible="1"/>
-                <field name="production_state" invisible="1"/>
             </header>
             <sheet>
                 <div class="oe_button_box" name="button_box">
@@ -141,7 +141,7 @@
                     <group>
                         <group>
                             <field name="qty_producing" string="Current Qty" attrs="{'readonly': ['|', ('product_tracking', '=', 'serial'), ('state', 'in', ('done', 'cancel'))]}"/>
-                            <field name="final_lot_id" context="{'default_product_id': product_id}" attrs="{'invisible': [('product_tracking', '=', 'none')]}" groups="stock.group_production_lot"/>
+                            <field name="final_lot_id" context="{'default_product_id': product_id}" domain="['|', '&amp;', ('product_id', '=', product_id), ('product_id.tracking', '!=', 'serial'), ('use_next_on_work_order_id', '=', id)]" attrs="{'invisible': [('product_tracking', '=', 'none')]}" groups="stock.group_production_lot"/>
                             <field name="product_tracking" invisible="1"/>
                         </group>
                     </group>
@@ -149,9 +149,12 @@
                     <field name="active_move_line_ids" attrs="{'invisible': [('active_move_line_ids', '=', [])]}">
                         <tree editable="bottom" create="0" delete="0">
                             <field name="product_id"/>
-                            <field name="product_qty" readonly="1"/>
+                            <field name="product_uom_qty" readonly="1" string="To Consume"/>
                             <field name="lot_id" domain="[('product_id', '=', product_id)]" context="{'default_product_id': product_id}"/>
                             <field name="qty_done"/>
+                            <field name="product_uom_id" invisible="1"/>
+                            <field name="location_id" invisible="1"/>
+                            <field name="location_dest_id" invisible="1"/>
                             <field name="move_id" invisible="1"/>
                             <field name="done_wo" invisible="1"/>
                         </tree>
@@ -162,9 +165,10 @@
                         <group>
                             <label for="date_planned_start" string="Planned Date"/>
                             <div class="o_row">
-                                from <field name="date_planned_start"/>
-                                <div attrs="{'invisible': [('date_planned_finished', '=', False)]}">
-                                    to
+                                <field name="date_planned_start" class="mr8"/>
+                                <div attrs="{'invisible': [('date_planned_start', '=', False)]}" class="o_row">
+                                    <strong attrs="{'invisible': [('date_planned_finished', '=', False)]}" class="mr8">to</strong>
+                                    <strong class="oe_edit_only mr8" attrs="{'invisible': [('date_planned_finished', '!=', False)]}">to</strong>
                                     <field name="date_planned_finished"/>
                                 </div>
                             </div>
@@ -172,7 +176,7 @@
                             <div class="o_row">
                                 <field name="date_start" readonly="1"/>
                                 <div  attrs="{'invisible': [('date_finished', '=', False)]}">
-                                    to
+                                    <strong class="mr8">to</strong>
                                     <field name="date_finished" readonly="1"/>
                                 </div>
                             </div>
@@ -196,7 +200,7 @@
                             <tree>
                                 <field name="date_start"/>
                                 <field name="date_end"/>
-                                <field name="duration" widget="float_time"/>
+                                <field name="duration" widget="float_time" sum="Total duration"/>
                                 <field name="user_id"/>
                                 <field name="loss_id" string="Efficiency"/>
                             </tree>
@@ -332,15 +336,13 @@
                     <t t-name="kanban-box">
                         <div t-attf-class="oe_kanban_card oe_kanban_global_click">
                             <div class="oe_kanban_content">
-                                <div>
-                                    <span><strong><t t-esc="record.product_id.value"/></strong></span>
-                                </div>
+                                <strong><span><t t-esc="record.production_id.value"/></span> - <span><t t-esc="record.name.value"/></span></strong>
                                 <div class="row">
                                     <div class="col-xs-7 o_kanban_primary_left">
-                                        <span><t t-esc="record.qty_production.value"/> <t t-esc="record.product_uom_id.value"/></span>
+                                        <span><t t-esc="record.product_id.value"/></span>
                                     </div>
                                     <div class="col-xs-5 o_kanban_primary_right">
-                                        <span><t t-esc="record.production_id.value"/></span>
+                                        <span><t t-esc="record.qty_production.value"/> <t t-esc="record.product_uom_id.value"/></span>
                                     </div>
                                 </div>
                             </div>
@@ -359,6 +361,7 @@
         <field name="view_mode">gantt,tree,form,calendar,pivot,graph</field>
         <field name="search_view_id" ref="view_mrp_production_workcenter_form_view_filter"/>
         <field name="view_id" ref="mrp_workorder_view_gantt"/>
+        <field name="context">{'search_default_work_center': True}</field>
         <field name="help" type="html">
           <p class="oe_view_nocontent_create">
            Work Orders are operations to be processed at a Work Center to realize a
@@ -375,7 +378,9 @@
         <field name="view_type">form</field>
         <field name="domain">[('production_state','not in',('done','cancel'))]</field>
         <field name="view_mode">gantt,tree,form,calendar,pivot,graph</field>
+        <field name="search_view_id" ref="view_mrp_production_workcenter_form_view_filter"/>
         <field name="view_id" ref="workcenter_line_gantt_production"/>
+        <field name="context">{'search_default_production': True}</field>
         <field name="help" type="html">
           <p class="oe_view_nocontent_create">
             Click to start a new work order.

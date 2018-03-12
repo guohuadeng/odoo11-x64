@@ -20,10 +20,14 @@ You could use this simplified accounting in case you work with an (external) acc
         'views/account_menuitem_views.xml',
         'views/product_template_views.xml',
         'views/account_invoicing_templates.xml',
+        'views/account_invoicing_views.xml',
+
     ],
     'demo': [
     ],
     'qweb': [
     ],
     'application': True,
+    'uninstall_hook': 'uninstall_hook',
+    'post_init_hook': 'post_init_hook',
 }

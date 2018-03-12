@@ -24,9 +24,8 @@ class MrpBom(models.Model):
         help="If the active field is set to False, it will allow you to hide the bills of material without removing it.")
     type = fields.Selection([
         ('normal', 'Manufacture this product'),
-        ('phantom', 'Ship this product as a set of components (kit)')], 'BoM Type',
-        default='normal', required=True,
-        help="Kit (Phantom): When processing a sales order for this product, the delivery order will contain the raw materials, instead of the finished product.")
+        ('phantom', 'Kit')], 'BoM Type',
+        default='normal', required=True)
     product_tmpl_id = fields.Many2one(
         'product.template', 'Product',
         domain="[('type', 'in', ['product', 'consu'])]", required=True)
@@ -81,6 +80,11 @@ class MrpBom(models.Model):
     def onchange_product_tmpl_id(self):
         if self.product_tmpl_id:
             self.product_uom_id = self.product_tmpl_id.uom_id.id
+
+    @api.onchange('routing_id')
+    def onchange_routing_id(self):
+        for line in self.bom_line_ids:
+            line.operation_id = False
 
     @api.multi
     def name_get(self):
@@ -172,7 +176,7 @@ class MrpBom(models.Model):
 
 class MrpBomLine(models.Model):
     _name = 'mrp.bom.line'
-    _order = "sequence"
+    _order = "sequence, id"
     _rec_name = "product_id"
 
     def _get_default_product_uom_id(self):
@@ -214,7 +218,8 @@ class MrpBomLine(models.Model):
     has_attachments = fields.Boolean('Has Attachments', compute='_compute_has_attachments')
 
     _sql_constraints = [
-        ('bom_qty_zero', 'CHECK (product_qty>0)', 'All product quantities must be greater than 0.\n'
+        ('bom_qty_zero', 'CHECK (product_qty>=0)', 'All product quantities must be greater or equal to 0.\n'
+            'Lines with 0 quantities can be used as optional lines. \n'
             'You should install the mrp_byproduct module if you want to manage extra products on BoMs !'),
     ]
 

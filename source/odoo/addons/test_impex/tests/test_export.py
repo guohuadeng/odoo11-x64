@@ -69,7 +69,7 @@ class test_integer_field(CreatorCase):
     def test_huge(self):
         self.assertEqual(
             self.export(2**31-1),
-            [[unicode(2**31-1)]])
+            [[pycompat.text_type(2**31-1)]])
 
 
 class test_float_field(CreatorCase):
@@ -319,7 +319,7 @@ class test_m2o(CreatorCase):
         record = self.env['export.integer'].create({'value': 42})
         self.assertEqual(
             self.export(record.id, fields=['value/.id', 'value/value']),
-            [[unicode(record.id), u'42']])
+            [[pycompat.text_type(record.id), u'42']])
 
     def test_external_id(self):
         record = self.env['export.integer'].create({'value': 42})
@@ -382,9 +382,13 @@ class test_o2m(CreatorCase):
     def test_multiple_records_name(self):
         self.assertEqual(
             self.export(self.commands, fields=['const', 'value']),
-            [[
-                u'4', u','.join(self.names)
-            ]])
+            [
+                [u'4', u'export.one2many.child:4'],
+                [u'', u'export.one2many.child:42'],
+                [u'', u'export.one2many.child:36'],
+                [u'', u'export.one2many.child:4'],
+                [u'', u'export.one2many.child:13'],
+            ])
 
     def test_multiple_records_id(self):
         export = self.export(self.commands, fields=['const', 'value/.id'])
@@ -402,19 +406,23 @@ class test_o2m(CreatorCase):
     def test_multiple_records_with_name_before(self):
         self.assertEqual(
             self.export(self.commands, fields=['const', 'value', 'value/value']),
-            [[ # exports sub-fields of very first o2m
-                u'4', u','.join(self.names), u'4'
-            ]])
+            [
+                [u'4', u'export.one2many.child:4', u'4'],
+                ['', u'export.one2many.child:42', u'42'],
+                ['', u'export.one2many.child:36', u'36'],
+                ['', u'export.one2many.child:4', u'4'],
+                ['', u'export.one2many.child:13', u'13'],
+            ])
 
     def test_multiple_records_with_name_after(self):
         self.assertEqual(
             self.export(self.commands, fields=['const', 'value/value', 'value']),
-            [ # completely ignores name_get request
-                [u'4', u'4', ''],
-                ['', u'42', ''],
-                ['', u'36', ''],
-                ['', u'4', ''],
-                ['', u'13', ''],
+            [
+                [u'4', u'4', u'export.one2many.child:4'],
+                ['', u'42', u'export.one2many.child:42'],
+                ['', u'36', u'export.one2many.child:36'],
+                ['', u'4', u'export.one2many.child:4'],
+                ['', u'13', u'export.one2many.child:13'],
             ])
 
     def test_multiple_subfields_neighbour(self):
@@ -585,12 +593,62 @@ class test_m2m(CreatorCase):
     def test_multiple_records_name(self):
         self.assertEqual(
             self.export(self.commands, fields=['const', 'value']),
-            [[ # FIXME: hardcoded comma, import uses config.csv_internal_sep
-               # resolution: remove configurable csv_internal_sep
-                u'4', u','.join(self.names)
-            ]])
+            [
+                [u'4', u'export.many2many.other:4'],
+                ['', u'export.many2many.other:42'],
+                ['', u'export.many2many.other:36'],
+                ['', u'export.many2many.other:4'],
+                ['', u'export.many2many.other:13'],
+            ])
 
-    # essentially same as o2m, so boring
+    def test_multiple_records_subfield(self):
+        r = self.make(self.commands)
+        xid = self.env['ir.model.data'].create({
+            'name': 'whopwhopwhop',
+            'module': '__t__',
+            'model': r._name,
+            'res_id': r.id,
+        }).complete_name
+        sids = [
+            self.env['ir.model.data'].create({
+                'name': sub.str,
+                'module': '__t__',
+                'model': sub._name,
+                'res_id': sub.id,
+            }).complete_name
+            for sub in r.value
+        ]
+        r.invalidate_cache()
+
+        self.assertEqual(
+            r._export_rows([['value', 'id']]),
+            [['__t__.record000,__t__.record001,__t__.record010,__t__.record011,__t__.record100']]
+        )
+        self.assertEqual(
+            r.with_context(import_compat=True)._export_rows([['value', 'id']]),
+            [['__t__.record000,__t__.record001,__t__.record010,__t__.record011,__t__.record100']]
+        )
+
+        self.assertEqual(
+            r.with_context(import_compat=False)._export_rows([['id'], ['value', 'id'], ['value', 'value']]),
+            [
+                [xid, u'__t__.record000', u'4'],
+                [u'', u'__t__.record001', u'42'],
+                [u'', u'__t__.record010', u'36'],
+                [u'', u'__t__.record011', u'4'],
+                [u'', u'__t__.record100', u'13']
+            ]
+        )
+        self.assertEqual(
+            r.with_context(import_compat=False)._export_rows([['id'], ['value', 'value'], ['value', 'id']]),
+            [
+                [xid, u'4', u'__t__.record000'],
+                [u'', u'42', u'__t__.record001'],
+                [u'', u'36', u'__t__.record010'],
+                [u'', u'4', u'__t__.record011'],
+                [u'', u'13', u'__t__.record100']
+            ]
+        )
 
 
 class test_function(CreatorCase):

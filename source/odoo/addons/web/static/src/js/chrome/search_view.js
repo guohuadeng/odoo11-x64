@@ -265,7 +265,7 @@ var SearchView = Widget.extend({
      *
      * @param parent
      * @param dataset
-     * @param fields_view
+     * @param fvg
      * @param {Object} [options]
      * @param {Boolean} [options.hidden=false] hide the search view
      * @param {Boolean} [options.disable_custom_filters=false] do not load custom filters from ir.filters
@@ -339,7 +339,7 @@ var SearchView = Widget.extend({
     },
     set_default_filters: function () {
         var self = this,
-            default_custom_filter = this.$buttons && this.favorite_menu.get_default_filter();
+            default_custom_filter = this.$buttons && this.favorite_menu && this.favorite_menu.get_default_filter();
         if (!self.options.disable_custom_filters && default_custom_filter) {
             return this.favorite_menu.toggle_filter(default_custom_filter, true);
         }
@@ -499,8 +499,8 @@ var SearchView = Widget.extend({
                 .$el.focus();
     },
     /**
-     * @param {openerp.web.search.SearchQuery | undefined} Undefined if event is change
-     * @param {openerp.web.search.Facet}
+     * @param {openerp.web.search.SearchQuery | undefined} collection Undefined if event is change
+     * @param {openerp.web.search.Facet} model
      * @param {Object} [options]
      */
     renderFacets: function (collection, model, options) {

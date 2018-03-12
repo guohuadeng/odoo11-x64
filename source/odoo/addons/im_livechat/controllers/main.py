@@ -75,7 +75,7 @@ class LivechatController(http.Controller):
         # if the user is identifiy (eg: portal user on the frontend), don't use the anonymous name. The user will be added to session.
         if request.session.uid:
             anonymous_name = request.env.user.name
-        return request.env["im_livechat.channel"].get_mail_channel(channel_id, anonymous_name)
+        return request.env["im_livechat.channel"].with_context(lang=False).get_mail_channel(channel_id, anonymous_name)
 
     @http.route('/im_livechat/feedback', type='json', auth='public')
     def feedback(self, uuid, rate, reason=None, **kwargs):
@@ -110,7 +110,8 @@ class LivechatController(http.Controller):
 
     @http.route('/im_livechat/history', type="json", auth="public")
     def history_pages(self, pid, channel_uuid, page_history=None):
-        channel = request.env['mail.channel'].search([('uuid', '=', channel_uuid)])
+        partner_ids = (pid, request.env.user.partner_id.id)
+        channel = request.env['mail.channel'].sudo().search([('uuid', '=', channel_uuid), ('channel_partner_ids', 'in', partner_ids)])
         if channel:
             channel._send_history_message(pid, page_history)
         return True

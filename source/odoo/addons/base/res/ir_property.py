@@ -212,12 +212,16 @@ class Property(models.Model):
             id = refs.pop(prop.res_id)
             value = clean(values[id])
             if value == default_value:
-                prop.unlink()
+                # avoid prop.unlink(), as it clears the record cache that can
+                # contain the value of other properties to set on record!
+                prop.check_access_rights('unlink')
+                prop.check_access_rule('unlink')
+                self._cr.execute("DELETE FROM ir_property WHERE id=%s", [prop.id])
             elif value != clean(prop.get_by_record()):
                 prop.write({'value': value})
 
         # create new properties for records that do not have one yet
-        for ref, id in pycompat.items(refs):
+        for ref, id in refs.items():
             value = clean(values[id])
             if value != default_value:
                 self.create({

@@ -4,7 +4,7 @@
 from lxml import etree
 
 from odoo import api, fields, models, tools, SUPERUSER_ID, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError, AccessError
 from odoo.tools.safe_eval import safe_eval
 
 
@@ -26,13 +26,13 @@ class ProjectTaskType(models.Model):
         string='Starred Explanation', translate=True,
         help='Explanation text to help users using the star on tasks or issues in this stage.')
     legend_blocked = fields.Char(
-        'Red Kanban Label', default='Blocked', translate=True, required=True,
+        'Red Kanban Label', default=lambda s: _('Blocked'), translate=True, required=True,
         help='Override the default value displayed for the blocked state for kanban selection, when the task or issue is in that stage.')
     legend_done = fields.Char(
-        'Green Kanban Label', default='Ready for Next Stage', translate=True, required=True,
+        'Green Kanban Label', default=lambda s: _('Ready for Next Stage'), translate=True, required=True,
         help='Override the default value displayed for the done state for kanban selection, when the task or issue is in that stage.')
     legend_normal = fields.Char(
-        'Grey Kanban Label', default='In Progress', translate=True, required=True,
+        'Grey Kanban Label', default=lambda s: _('In Progress'), translate=True, required=True,
         help='Override the default value displayed for the normal state for kanban selection, when the task or issue is in that stage.')
     mail_template_id = fields.Many2one(
         'mail.template',
@@ -46,7 +46,7 @@ class ProjectTaskType(models.Model):
 class Project(models.Model):
     _name = "project.project"
     _description = "Project"
-    _inherit = ['mail.alias.mixin', 'mail.thread']
+    _inherit = ['mail.alias.mixin', 'mail.thread', 'portal.mixin']
     _inherits = {'account.analytic.account': "analytic_account_id"}
     _order = "sequence, name, id"
     _period_number = 5
@@ -166,12 +166,6 @@ class Project(models.Model):
     def _get_default_favorite_user_ids(self):
         return [(6, 0, [self.env.uid])]
 
-    @api.model
-    def default_get(self, flds):
-        result = super(Project, self).default_get(flds)
-        result['use_tasks'] = True
-        return result
-
     active = fields.Boolean(default=True,
         help="If the active field is set to False, it will allow you to hide the project without removing it.")
     sequence = fields.Integer(default=10, help="Gives the sequence order when displaying a list of Projects.")
@@ -225,6 +219,11 @@ class Project(models.Model):
         ('project_date_greater', 'check(date >= date_start)', 'Error! project start-date must be lower than project end-date.')
     ]
 
+    def _compute_portal_url(self):
+        super(Project, self)._compute_portal_url()
+        for project in self:
+            project.portal_url = '/my/project/%s' % project.id
+
     @api.multi
     def map_tasks(self, new_project_id):
         """ copy and map tasks from old to new project """
@@ -246,13 +245,14 @@ class Project(models.Model):
         project = super(Project, self).copy(default)
         for follower in self.message_follower_ids:
             project.message_subscribe(partner_ids=follower.partner_id.ids, subtype_ids=follower.subtype_ids.ids)
-        self.map_tasks(project.id)
+        if 'tasks' not in default:
+            self.map_tasks(project.id)
         return project
 
     @api.model
     def create(self, vals):
-        # Prevent double project creation when 'use_tasks' is checked
-        self = self.with_context(project_creation_in_progress=True, mail_create_nosubscribe=True)
+        # Prevent double project creation
+        self = self.with_context(mail_create_nosubscribe=True)
         project = super(Project, self).create(vals)
         if not vals.get('subtask_project_id'):
             project.subtask_project_id = project.id
@@ -262,14 +262,44 @@ class Project(models.Model):
 
     @api.multi
     def write(self, vals):
-        res = super(Project, self).write(vals)
+        # directly compute is_favorite to dodge allow write access right
+        if 'is_favorite' in vals:
+            vals.pop('is_favorite')
+            self._fields['is_favorite'].determine_inverse(self)
+        res = super(Project, self).write(vals) if vals else True
         if 'active' in vals:
             # archiving/unarchiving a project does it on its tasks, too
             self.with_context(active_test=False).mapped('tasks').write({'active': vals['active']})
+            # archiving/unarchiving a project implies that we don't want to use the analytic account anymore
+            self.with_context(active_test=False).mapped('analytic_account_id').write({'active': vals['active']})
         if vals.get('partner_id') or vals.get('privacy_visibility'):
             for project in self.filtered(lambda project: project.privacy_visibility == 'portal'):
                 project.message_subscribe(project.partner_id.ids)
         return res
+
+    @api.multi
+    def get_access_action(self, access_uid=None):
+        """ Instead of the classic form view, redirect to website for portal users
+        that can read the project. """
+        self.ensure_one()
+        user, record = self.env.user, self
+        if access_uid:
+            user = self.env['res.users'].sudo().browse(access_uid)
+            record = self.sudo(user)
+
+        if user.share:
+            try:
+                record.check_access_rule('read')
+            except AccessError:
+                pass
+            else:
+                return {
+                    'type': 'ir.actions.act_url',
+                    'url': '/my/project/%s' % self.id,
+                    'target': 'self',
+                    'res_id': self.id,
+                }
+        return super(Project, self).get_access_action(access_uid)
 
     @api.multi
     def message_subscribe(self, partner_ids=None, channel_ids=None, subtype_ids=None, force=True):
@@ -291,17 +321,53 @@ class Project(models.Model):
         return super(Project, self).message_unsubscribe(partner_ids=partner_ids, channel_ids=channel_ids)
 
     @api.multi
+    def _notification_recipients(self, message, groups):
+        groups = super(Project, self)._notification_recipients(message, groups)
+
+        for group_name, group_method, group_data in groups:
+            if group_name in ['customer', 'portal']:
+                continue
+            group_data['has_button_access'] = True
+
+        return groups
+
+    @api.multi
+    def toggle_favorite(self):
+        favorite_projects = not_fav_projects = self.env['project.project'].sudo()
+        for project in self:
+            if self.env.user in project.favorite_user_ids:
+                favorite_projects |= project
+            else:
+                not_fav_projects |= project
+
+        # Project User has no write access for project.
+        not_fav_projects.write({'favorite_user_ids': [(4, self.env.uid)]})
+        favorite_projects.write({'favorite_user_ids': [(3, self.env.uid)]})
+
+    @api.multi
     def close_dialog(self):
         return {'type': 'ir.actions.act_window_close'}
+
+    @api.multi
+    def edit_dialog(self):
+        form_view = self.env.ref('project.edit_project')
+        return {
+            'name': _('Project'),
+            'res_model': 'project.project',
+            'res_id': self.id,
+            'views': [(form_view.id, 'form'),],
+            'type': 'ir.actions.act_window',
+            'target': 'inline'
+        }
 
 
 class Task(models.Model):
     _name = "project.task"
     _description = "Task"
     _date_name = "date_start"
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'portal.mixin']
     _mail_post_access = 'read'
-    _order = "priority desc, sequence, date_start, name, id"
+    _order = "priority desc, sequence, id desc"
 
     def _get_default_partner(self):
         if 'default_project_id' in self.env.context:
@@ -330,7 +396,6 @@ class Task(models.Model):
     priority = fields.Selection([
         ('0', 'Low'),
         ('1', 'Normal'),
-        ('2', 'High')
         ], default='0', index=True, string="Priority")
     sequence = fields.Integer(string='Sequence', index=True, default=10,
         help="Gives the sequence order when displaying a list of tasks.")
@@ -377,19 +442,20 @@ class Task(models.Model):
     partner_id = fields.Many2one('res.partner',
         string='Customer',
         default=_get_default_partner)
-    manager_id = fields.Many2one('res.users', string='Project Manager', related='project_id.user_id', readonly=True)
+    manager_id = fields.Many2one('res.users', string='Project Manager', related='project_id.user_id', readonly=True, related_sudo=False)
     company_id = fields.Many2one('res.company',
         string='Company',
         default=lambda self: self.env['res.company']._company_default_get())
     color = fields.Integer(string='Color Index')
-    user_email = fields.Char(related='user_id.email', string='User Email', readonly=True)
-    attachment_ids = fields.One2many('ir.attachment', 'res_id', domain=lambda self: [('res_model', '=', self._name)], auto_join=True, string='Attachments')
+    user_email = fields.Char(related='user_id.email', string='User Email', readonly=True, related_sudo=False)
+    attachment_ids = fields.One2many('ir.attachment', compute='_compute_attachment_ids', string="Main Attachments",
+        help="Attachment that don't come from message.")
     # In the domain of displayed_image_id, we couln't use attachment_ids because a one2many is represented as a list of commands so we used res_model & res_id
     displayed_image_id = fields.Many2one('ir.attachment', domain="[('res_model', '=', 'project.task'), ('res_id', '=', id), ('mimetype', 'ilike', 'image')]", string='Cover Image')
-    legend_blocked = fields.Char(related='stage_id.legend_blocked', string='Kanban Blocked Explanation', readonly=True)
-    legend_done = fields.Char(related='stage_id.legend_done', string='Kanban Valid Explanation', readonly=True)
-    legend_normal = fields.Char(related='stage_id.legend_normal', string='Kanban Ongoing Explanation', readonly=True)
-    parent_id = fields.Many2one('project.task', string='Parent Task')
+    legend_blocked = fields.Char(related='stage_id.legend_blocked', string='Kanban Blocked Explanation', readonly=True, related_sudo=False)
+    legend_done = fields.Char(related='stage_id.legend_done', string='Kanban Valid Explanation', readonly=True, related_sudo=False)
+    legend_normal = fields.Char(related='stage_id.legend_normal', string='Kanban Ongoing Explanation', readonly=True, related_sudo=False)
+    parent_id = fields.Many2one('project.task', string='Parent Task', index=True)
     child_ids = fields.One2many('project.task', 'parent_id', string="Sub-tasks")
     subtask_project_id = fields.Many2one('project.project', related="project_id.subtask_project_id", string='Sub-task Project', readonly=True)
     subtask_count = fields.Integer(compute='_compute_subtask_count', type='integer', string="Sub-task count")
@@ -401,6 +467,14 @@ class Task(models.Model):
     working_hours_close = fields.Float(compute='_compute_elapsed', string='Working hours to close', store=True, group_operator="avg")
     working_days_open = fields.Float(compute='_compute_elapsed', string='Working days to assign', store=True, group_operator="avg")
     working_days_close = fields.Float(compute='_compute_elapsed', string='Working days to close', store=True, group_operator="avg")
+    # customer portal: include comment and incoming emails in communication history
+    website_message_ids = fields.One2many(domain=lambda self: [('model', '=', self._name), ('message_type', 'in', ['email', 'comment'])])
+
+    def _compute_attachment_ids(self):
+        for task in self:
+            attachment_ids = self.env['ir.attachment'].search([('res_id', '=', task.id), ('res_model', '=', 'project.task')]).ids
+            message_attachment_ids = self.mapped('message_ids.attachment_ids').ids  # from mail_thread
+            task.attachment_ids = list(set(attachment_ids) - set(message_attachment_ids))
 
     @api.multi
     @api.depends('create_date', 'date_end', 'date_assign')
@@ -436,23 +510,23 @@ class Task(models.Model):
             else:
                 task.kanban_state_label = task.legend_done
 
+    def _compute_portal_url(self):
+        super(Task, self)._compute_portal_url()
+        for task in self:
+            task.portal_url = '/my/task/%s' % task.id
+
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
         self.email_from = self.partner_id.email
 
     @api.onchange('project_id')
     def _onchange_project(self):
-        default_partner_id = self.env.context.get('default_partner_id')
-        default_partner = self.env['res.partner'].browse(default_partner_id) if default_partner_id else None
         if self.project_id:
-            self.partner_id = self.project_id.partner_id or default_partner
+            if self.project_id.partner_id:
+                self.partner_id = self.project_id.partner_id
             if self.project_id not in self.stage_id.project_ids:
                 self.stage_id = self.stage_find(self.project_id.id, [('fold', '=', False)])
-            if not self.email_from:
-                self.email_from = self.partner_id.email
         else:
-            self.partner_id = default_partner
-            self.email_from = default_partner.email
             self.stage_id = False
 
     @api.onchange('user_id')
@@ -511,7 +585,7 @@ class Task(models.Model):
 
         _check_rec(eview)
 
-        res['arch'] = etree.tostring(eview)
+        res['arch'] = etree.tostring(eview, encoding='unicode')
 
         # replace reference of 'Hours' to 'Day(s)'
         for f in res['fields']:
@@ -601,6 +675,30 @@ class Task(models.Model):
             return {'date_end': fields.Datetime.now()}
         return {'date_end': False}
 
+    @api.multi
+    def get_access_action(self, access_uid=None):
+        """ Instead of the classic form view, redirect to website for portal users
+        that can read the task. """
+        self.ensure_one()
+        user, record = self.env.user, self
+        if access_uid:
+            user = self.env['res.users'].sudo().browse(access_uid)
+            record = self.sudo(user)
+
+        if user.share:
+            try:
+                record.check_access_rule('read')
+            except AccessError:
+                pass
+            else:
+                return {
+                    'type': 'ir.actions.act_url',
+                    'url': '/my/task/%s' % self.id,
+                    'target': 'self',
+                    'res_id': self.id,
+                }
+        return super(Task, self).get_access_action(access_uid)
+
     # ---------------------------------------------------
     # Mail gateway
     # ---------------------------------------------------
@@ -647,7 +745,13 @@ class Task(models.Model):
                 'actions': project_actions,
             })
 
-        return [new_group] + groups
+        groups = [new_group] + groups
+        for group_name, group_method, group_data in groups:
+            if group_name in ['customer', 'portal']:
+                continue
+            group_data['has_button_access'] = True
+
+        return groups
 
     @api.model
     def message_get_reply_to(self, res_ids, default=None):
@@ -778,7 +882,6 @@ class AccountAnalyticAccount(models.Model):
     _inherit = 'account.analytic.account'
     _description = 'Analytic Account'
 
-    use_tasks = fields.Boolean(string='Use Tasks', help="Check this box to manage internal activities through this project")
     company_uom_id = fields.Many2one('product.uom', related='company_id.project_time_mode_id', string="Company UOM")
     project_ids = fields.One2many('project.project', 'analytic_account_id', string='Projects')
     project_count = fields.Integer(compute='_compute_project_count', string='Project Count')
@@ -786,45 +889,6 @@ class AccountAnalyticAccount(models.Model):
     def _compute_project_count(self):
         for account in self:
             account.project_count = len(account.with_context(active_test=False).project_ids)
-
-    @api.model
-    def _trigger_project_creation(self, vals):
-        '''
-        This function is used to decide if a project needs to be automatically created or not when an analytic account is created. It returns True if it needs to be so, False otherwise.
-        '''
-        return vals.get('use_tasks') and 'project_creation_in_progress' not in self.env.context
-
-    @api.multi
-    def project_create(self, vals):
-        '''
-        This function is called at the time of analytic account creation and is used to create a project automatically linked to it if the conditions are meet.
-        '''
-        self.ensure_one()
-        Project = self.env['project.project']
-        project = Project.with_context(active_test=False).search([('analytic_account_id', '=', self.id)])
-        if not project and self._trigger_project_creation(vals):
-            project_values = {
-                'name': vals.get('name'),
-                'analytic_account_id': self.id,
-                'use_tasks': True,
-            }
-            return Project.create(project_values).id
-        return False
-
-    @api.model
-    def create(self, vals):
-        analytic_account = super(AccountAnalyticAccount, self).create(vals)
-        analytic_account.project_create(vals)
-        return analytic_account
-
-    @api.multi
-    def write(self, vals):
-        vals_for_project = vals.copy()
-        for account in self:
-            if not vals.get('name'):
-                vals_for_project['name'] = account.name
-            account.project_create(vals_for_project)
-        return super(AccountAnalyticAccount, self).write(vals)
 
     @api.multi
     def unlink(self):

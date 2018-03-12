@@ -314,6 +314,7 @@ var DataSet =  Class.extend(mixins.PropertiesMixin, {
      */
     init: function (parent, model, context) {
         mixins.PropertiesMixin.init.call(this);
+        this.setParent(parent);
         this.model = model;
         this.context = context || {};
         this.index = null;
@@ -733,6 +734,7 @@ var data = {
     DataSet: DataSet,
     DataSetStatic: DataSetStatic,
     DataSetSearch: DataSetSearch,
+    /** @type String */
     noDisplayContent: "<em class=\"text-warning\">" + _t("Unnamed") + "</em>",
 };
 

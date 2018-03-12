@@ -8,11 +8,20 @@ div.card_placeholder {
   width: 32px;
   height: 20px;
   position: absolute;
-  top: 34px;
+  top: 8px;
   right: 20px;
   -webkit-transition: 0.4s cubic-bezier(0.455, 0.03, 0.515, 0.955);
   transition: 0.4s cubic-bezier(0.455, 0.03, 0.515, 0.955);
   pointer-events: none; }
+
+/* if s2s form not in bootstrap_formatting */
+div.o_card_brand_detail {
+  position: relative;
+}
+
+div.o_card_brand_detail div.card_placeholder {
+  right: 5px;
+}
 
 div.amex {
   background-image: url("/website_payment/static/src/img/amex.png");

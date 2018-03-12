@@ -13,7 +13,7 @@ from odoo.tools import pycompat
 
 class ProductTemplate(models.Model):
     _name = "product.template"
-    _inherit = ['mail.thread']
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = "Product Template"
     _order = "name"
 
@@ -78,7 +78,9 @@ class ProductTemplate(models.Model):
         'Cost', compute='_compute_standard_price',
         inverse='_set_standard_price', search='_search_standard_price',
         digits=dp.get_precision('Product Price'), groups="base.group_user",
-        help="The cost price is used to valuate your inventory.")
+        help = "Cost used for stock valuation in standard price and as a first price to set in average/fifo. "
+               "Also used as a base price for pricelists. "
+               "Expressed in the default unit of measure of the product. ")
 
     volume = fields.Float(
         'Volume', compute='_compute_volume', inverse='_set_volume',
@@ -170,7 +172,7 @@ class ProductTemplate(models.Model):
             quantity = self._context.get('quantity', 1.0)
 
             # Support context pricelists specified as display_name or ID for compatibility
-            if isinstance(pricelist_id_or_name, basestring):
+            if isinstance(pricelist_id_or_name, pycompat.string_types):
                 pricelist_data = self.env['product.pricelist'].name_search(pricelist_id_or_name, operator='=', limit=1)
                 if pricelist_data:
                     pricelist = self.env['product.pricelist'].browse(pricelist_data[0][0])
@@ -392,7 +394,7 @@ class ProductTemplate(models.Model):
         for tmpl_id in self.with_context(active_test=False):
             # adding an attribute with only one value should not recreate product
             # write this attribute on every product to make sure we don't lose them
-            variant_alone = tmpl_id.attribute_line_ids.filtered(lambda line: len(line.value_ids) == 1).mapped('value_ids')
+            variant_alone = tmpl_id.attribute_line_ids.filtered(lambda line: line.attribute_id.create_variant and len(line.value_ids) == 1).mapped('value_ids')
             for value_id in variant_alone:
                 updated_products = tmpl_id.product_variant_ids.filtered(lambda product: value_id.attribute_id not in product.mapped('attribute_value_ids.attribute_id'))
                 updated_products.write({'attribute_value_ids': [(4, value_id.id)]})
@@ -404,7 +406,7 @@ class ProductTemplate(models.Model):
             ]
 
             # get the value (id) sets of existing variants
-            existing_variants = {frozenset(variant.attribute_value_ids.ids) for variant in tmpl_id.product_variant_ids}
+            existing_variants = {frozenset(variant.attribute_value_ids.filtered(lambda r: r.attribute_id.create_variant).ids) for variant in tmpl_id.product_variant_ids}
             # -> for each value set, create a recordset of values to create a
             #    variant for if the value set isn't already a variant
             to_create_variants = [
@@ -417,9 +419,9 @@ class ProductTemplate(models.Model):
             variants_to_activate = self.env['product.product']
             variants_to_unlink = self.env['product.product']
             for product_id in tmpl_id.product_variant_ids:
-                if not product_id.active and product_id.attribute_value_ids in variant_matrix:
+                if not product_id.active and product_id.attribute_value_ids.filtered(lambda r: r.attribute_id.create_variant) in variant_matrix:
                     variants_to_activate |= product_id
-                elif product_id.attribute_value_ids not in variant_matrix:
+                elif product_id.attribute_value_ids.filtered(lambda r: r.attribute_id.create_variant) not in variant_matrix:
                     variants_to_unlink |= product_id
             if variants_to_activate:
                 variants_to_activate.write({'active': True})

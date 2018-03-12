@@ -61,7 +61,7 @@ class FormatAddressMixin(models.AbstractModel):
                     except ValueError:
                         return arch
                 address_node.getparent().replace(address_node, sub_view_node)
-            arch = etree.tostring(doc)
+            arch = etree.tostring(doc, encoding='unicode')
         return arch
 
 class PartnerCategory(models.Model):
@@ -196,11 +196,11 @@ class Partner(models.Model):
     mobile = fields.Char()
     is_company = fields.Boolean(string='Is a Company', default=False,
         help="Check if the contact is a company, otherwise it is a person")
-    industry_id = fields.Many2one('res.partner.industry', 'Sector of Activity')
+    industry_id = fields.Many2one('res.partner.industry', 'Industry')
     # company_type is only an interface field, do not use it in business logic
     company_type = fields.Selection(string='Company Type',
         selection=[('person', 'Individual'), ('company', 'Company')],
-        compute='_compute_company_type', readonly=False)
+        compute='_compute_company_type', inverse='_write_company_type')
     company_id = fields.Many2one('res.company', 'Company', index=True, default=_default_company)
     color = fields.Integer(string='Color Index', default=0)
     user_ids = fields.One2many('res.users', 'partner_id', string='Users', auto_join=True)
@@ -277,6 +277,35 @@ class Partner(models.Model):
             partner.commercial_company_name = p.is_company and p.name or partner.company_name
 
     @api.model
+    def _get_default_image(self, partner_type, is_company, parent_id):
+        if getattr(threading.currentThread(), 'testing', False) or self._context.get('install_mode'):
+            return False
+
+        colorize, img_path, image = False, False, False
+
+        if partner_type in ['other'] and parent_id:
+            parent_image = self.browse(parent_id).image
+            image = parent_image and base64.b64decode(parent_image) or None
+
+        if not image and partner_type == 'invoice':
+            img_path = get_module_resource('base', 'static/src/img', 'money.png')
+        elif not image and partner_type == 'delivery':
+            img_path = get_module_resource('base', 'static/src/img', 'truck.png')
+        elif not image and is_company:
+            img_path = get_module_resource('base', 'static/src/img', 'company_image.png')
+        elif not image:
+            img_path = get_module_resource('base', 'static/src/img', 'avatar.png')
+            colorize = True
+
+        if img_path:
+            with open(img_path, 'rb') as f:
+                image = f.read()
+        if image and colorize:
+            image = tools.image_colorize(image)
+
+        return tools.image_resize_image_big(base64.b64encode(image))
+
+    @api.model
     def _fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         if (not view_id) and (view_type == 'form') and self._context.get('force_email'):
             view_id = self.env.ref('base.view_partner_simple_form').id
@@ -336,12 +365,16 @@ class Partner(models.Model):
     @api.depends('name', 'email')
     def _compute_email_formatted(self):
         for partner in self:
-            partner.email_formatted = formataddr((partner.name, partner.email))
+            partner.email_formatted = formataddr((partner.name or u"False", partner.email or u"False"))
 
     @api.depends('is_company')
     def _compute_company_type(self):
         for partner in self:
             partner.company_type = 'company' if partner.is_company else 'person'
+
+    def _write_company_type(self):
+        for partner in self:
+            partner.is_company = partner.company_type == 'company'
 
     @api.onchange('company_type')
     def onchange_company_type(self):
@@ -476,7 +509,7 @@ class Partner(models.Model):
         result = True
         # To write in SUPERUSER on field is_company and avoid access rights problems.
         if 'is_company' in vals and self.user_has_groups('base.group_partner_manager') and not self.env.uid == SUPERUSER_ID:
-            result = super(Partner, self).sudo().write({'is_company': vals.get('is_company')})
+            result = super(Partner, self.sudo()).write({'is_company': vals.get('is_company')})
             del vals['is_company']
         result = result and super(Partner, self).write(vals)
         for partner in self:
@@ -491,6 +524,10 @@ class Partner(models.Model):
             vals['website'] = self._clean_website(vals['website'])
         if vals.get('parent_id'):
             vals['company_name'] = False
+        # compute default image in create, because computing gravatar in the onchange
+        # cannot be easily performed if default images are in the way
+        if not vals.get('image'):
+            vals['image'] = self._get_default_image(vals.get('type'), vals.get('is_company'), vals.get('parent_id'))
         tools.image_resize_images(vals)
         partner = super(Partner, self).create(vals)
         partner._fields_sync(vals)
@@ -502,7 +539,7 @@ class Partner(models.Model):
         self.ensure_one()
         if self.company_name:
             # Create parent company
-            values = dict(name=self.company_name, is_company=True)
+            values = dict(name=self.company_name, is_company=True, vat=self.vat)
             values.update(self._update_fields_values(self._address_fields()))
             new_company = self.create(values)
             # Set new company as my parent
@@ -664,7 +701,7 @@ class Partner(models.Model):
         return partners.id or self.name_create(email)[0]
 
     def _get_gravatar_image(self, email):
-        email_hash = hashlib.md5(email.lower()).hexdigest()
+        email_hash = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
         url = "https://www.gravatar.com/avatar/" + email_hash
         try:
             res = requests.get(url, params={'d': '404', 's': '128'}, timeout=5)
@@ -777,7 +814,7 @@ class Partner(models.Model):
 
 
 class ResPartnerIndustry(models.Model):
-    _description = 'Sector of Activity'
+    _description = 'Industry'
     _name = "res.partner.industry"
     _order = "name"
 

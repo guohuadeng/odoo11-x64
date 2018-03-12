@@ -5,7 +5,6 @@ import ast
 
 from odoo import models
 from odoo.http import request
-from odoo.tools import pycompat
 
 
 class QWeb(models.AbstractModel):
@@ -27,7 +26,7 @@ class QWeb(models.AbstractModel):
     def _get_asset(self, xmlid, options, css=True, js=True, debug=False, async=False, values=None):
         website = getattr(request, 'website', None) if request else None
         if website and website.cdn_activated:
-            values = dict(values, url_for=website.get_cdn_url)
+            values = dict(values or {}, url_for=website.get_cdn_url)
         return super(QWeb, self)._get_asset(xmlid, options, css, js, debug, async, values)
 
     def _website_build_attribute(self, tagName, name, value, options, values):
@@ -82,7 +81,7 @@ class QWeb(models.AbstractModel):
         atts = super(QWeb, self)._get_dynamic_att(tagName, atts, options, values)
         if options.get('rendering_bundle'):
             return atts
-        for name, value in pycompat.items(atts):
+        for name, value in atts.items():
             atts[name] = self._website_build_attribute(tagName, name, value, options, values)
         return atts
 

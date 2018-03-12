@@ -35,7 +35,7 @@ class WebsiteBlog(http.Controller):
             group['date_begin'] = start
             group['date_end'] = end
 
-            locale = request.context.get('lang', 'en_US')
+            locale = request.context.get('lang') or 'en_US'
             start = pytz.UTC.localize(fields.Datetime.from_string(start))
             tzinfo = pytz.timezone(request.context.get('tz', 'utc') or 'utc')
 
@@ -173,7 +173,9 @@ class WebsiteBlog(http.Controller):
         v = {}
         v['blog'] = blog
         v['base_url'] = request.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        v['posts'] = request.env['blog.post'].search([('blog_id','=', blog.id)], limit=min(int(limit), 50))
+        v['posts'] = request.env['blog.post'].search([('blog_id','=', blog.id)],
+            limit=min(int(limit), 50),
+            order="post_date DESC")
         v['html2plaintext'] = html2plaintext
         r = request.render("website_blog.blog_feed", v, headers=[('Content-Type', 'application/atom+xml')])
         return r
@@ -288,8 +290,8 @@ class WebsiteBlog(http.Controller):
                 "id": message.id,
                 "author_name": message.author_id.name,
                 "author_image": message.author_id.image and \
-                    ("data:image/png;base64,%s" % message.author_id.image) or \
-                    '/website_blog/static/src/img/anonymous.png',
+                    (b"data:image/png;base64,%s" % message.author_id.image) or \
+                    b'/website_blog/static/src/img/anonymous.png',
                 "date": message.date,
                 'body': html2plaintext(message.body),
                 'website_published' : message.website_published,

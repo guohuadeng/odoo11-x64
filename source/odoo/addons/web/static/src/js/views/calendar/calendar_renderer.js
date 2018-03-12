@@ -252,6 +252,24 @@ return AbstractRenderer.extend({
         this.color_map[key] = index;
         return index;
     },
+    /**
+     * @override
+     */
+    getLocalState: function () {
+        var $fcScroller = this.$calendar.find('.fc-scroller');
+        return {
+            scrollPosition: $fcScroller.scrollTop(),
+        };
+    },
+    /**
+     * @override
+     */
+    setLocalState: function (localState) {
+        if (localState.scrollPosition) {
+            var $fcScroller = this.$calendar.find('.fc-scroller');
+            $fcScroller.scrollTop(localState.scrollPosition);
+        }
+    },
 
     //--------------------------------------------------------------------------
     // Private
@@ -312,7 +330,11 @@ return AbstractRenderer.extend({
                 self.$calendar.fullCalendar('unselect');
             },
             select: function (target_date, end_date, event, _js_event, _view) {
-                self.trigger_up('openCreate', {'start': target_date, 'end': end_date});
+                var data = {'start': target_date, 'end': end_date};
+                if (self.state.context.default_name) {
+                    data.title = self.state.context.default_name;
+                }
+                self.trigger_up('openCreate', data);
                 self.$calendar.fullCalendar('unselect');
             },
             eventRender: function (event, element) {
@@ -331,12 +353,25 @@ return AbstractRenderer.extend({
                 }
                 element.find('.fc-content .fc-time').text(display_hour);
             },
+            // Dirty hack to ensure a correct first render
+            eventAfterAllRender: function () {
+                $(window).trigger('resize');
+            },
+            viewRender: function (view) {
+                // compute mode from view.name which is either 'month', 'agendaWeek' or 'agendaDay'
+                var mode = view.name === 'month' ? 'month' : (view.name === 'agendaWeek' ? 'week' : 'day');
+                // compute title: in week mode, display the week number
+                var title = mode === 'week' ? view.intervalStart.week() : view.title;
+                self.trigger_up('viewUpdated', {
+                    mode: mode,
+                    title: title,
+                });
+            },
             height: 'parent',
             unselectAuto: false,
         });
 
         this.$calendar.fullCalendar(fc_options);
-        window.dispatchEvent(new Event('resize'));
     },
     /**
      * Initialize the mini calendar in the sidebar
@@ -373,6 +408,7 @@ return AbstractRenderer.extend({
         var $calendar = this.$calendar;
         var $fc_view = $calendar.find('.fc-view');
         var scrollPosition = $fc_view.scrollLeft();
+        var scrollTop = this.$calendar.find('.fc-scroller').scrollTop();
 
         $fc_view.scrollLeft(0);
         $calendar.fullCalendar('unselect');
@@ -385,11 +421,6 @@ return AbstractRenderer.extend({
             $calendar.fullCalendar('gotoDate', moment(this.state.target_date));
             this.target_date = this.state.target_date.toString();
         }
-
-        var highlightDate = moment(this.state.highlight_date).format('YYYY-MM-DD');
-        $calendar.find('.o_target_date').removeClass('o_target_date');
-        $calendar.find('.fc-bg .fc-day[data-date="'+highlightDate+'"]')
-                 .addClass('o_target_date');
 
         this.$small_calendar.datepicker("setDate", this.state.highlight_date.toDate())
                             .find('.o_selected_range')
@@ -417,7 +448,11 @@ return AbstractRenderer.extend({
 
         this._renderFilters();
         this.$calendar.appendTo('body');
-        this.$calendar.fullCalendar('render');
+        if (scrollTop) {
+            this.$calendar.fullCalendar('reinitView');
+        } else {
+            this.$calendar.fullCalendar('render');
+        }
         this._renderEvents();
         this.$calendar.prependTo(this.$('.o_calendar_view'));
 

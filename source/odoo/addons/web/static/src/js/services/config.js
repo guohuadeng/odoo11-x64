@@ -16,23 +16,31 @@ var config = {
     /**
      * debug is a boolean flag.  It is only considered true if the flag is set
      * in the url
+     *
+     * @type Boolean
      */
     debug: ($.deparam($.param.querystring()).debug !== undefined),
     device: {
         /**
          * touch is a boolean, true if the device supports touch interaction
+         *
+         * @type Boolean
          */
         touch: 'ontouchstart' in window || 'onmsgesturechange' in window,
         /**
          * size_class is an integer: 0, 1, 2 or 3, depending on the (current)
          * size of the device.  This is a dynamic property, updated whenever the
          * browser is resized
+         *
+         * @type Number
          */
         size_class: null,
         /**
          * A frequent use case is to have a different render in 'mobile' mode,
          * meaning when the screen is small.  This flag (boolean) is true when
          * the size is not 3.  It is also updated dynamically.
+         *
+         * @type Boolean
          */
         isMobile: null,
         /**
@@ -70,7 +78,7 @@ function _updateSizeProps() {
     var sc = _getSizeClass();
     if (sc !== config.device.size_class) {
         config.device.size_class = sc;
-        config.isMobile = config.device.size_class <= config.device.SIZES.XS;
+        config.device.isMobile = config.device.size_class <= config.device.SIZES.XS;
         core.bus.trigger('size_class', sc);
     }
 }

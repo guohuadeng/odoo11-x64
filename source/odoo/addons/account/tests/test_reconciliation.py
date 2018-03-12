@@ -2,8 +2,6 @@ from odoo.addons.account.tests.account_test_classes import AccountingTestCase
 import time
 import unittest
 
-from odoo.tools import pycompat
-
 
 class TestReconciliation(AccountingTestCase):
 
@@ -22,13 +20,15 @@ class TestReconciliation(AccountingTestCase):
         self.res_currency_model = self.registry('res.currency')
         self.res_currency_rate_model = self.registry('res.currency.rate')
 
-        self.partner_agrolait_id = self.env.ref("base.res_partner_2").id
+        partner_agrolait = self.env.ref("base.res_partner_2")
+        self.partner_agrolait_id = partner_agrolait.id
         self.currency_swiss_id = self.env.ref("base.CHF").id
         self.currency_usd_id = self.env.ref("base.USD").id
         self.currency_euro_id = self.env.ref("base.EUR").id
-        self.env.ref('base.main_company').write({'currency_id': self.currency_euro_id})
-        self.account_rcv = self.env['account.account'].search([('user_type_id', '=', self.env.ref('account.data_account_type_receivable').id)], limit=1)
-        self.account_rsa = self.env['account.account'].search([('user_type_id', '=', self.env.ref('account.data_account_type_payable').id)], limit=1)
+        company = self.env.ref('base.main_company')
+        self.cr.execute("UPDATE res_company SET currency_id = %s WHERE id = %s", [self.currency_euro_id, company.id])
+        self.account_rcv = partner_agrolait.property_account_receivable_id or self.env['account.account'].search([('user_type_id', '=', self.env.ref('account.data_account_type_receivable').id)], limit=1)
+        self.account_rsa = partner_agrolait.property_account_payable_id or self.env['account.account'].search([('user_type_id', '=', self.env.ref('account.data_account_type_payable').id)], limit=1)
         self.product = self.env.ref("product.product_product_4")
 
         self.bank_journal_euro = self.env['account.journal'].create({'name': 'Bank', 'type': 'bank', 'code': 'BNK67'})
@@ -339,8 +339,8 @@ class TestReconciliation(AccountingTestCase):
         self.assertTrue(exchange_loss_line, 'There should be one move line of 0.01 EUR in credit')
         # The journal items of the reconciliation should have their debit and credit total equal
         # Besides, the total debit and total credit should be 60.61 EUR (2.00 USD)
-        self.assertEquals(sum(res['debit'] for res in pycompat.values(result)), 60.61)
-        self.assertEquals(sum(res['credit'] for res in pycompat.items(result)), 60.61)
+        self.assertEquals(sum(res['debit'] for res in result.values()), 60.61)
+        self.assertEquals(sum(res['credit'] for res in result.items()), 60.61)
         counterpart_exchange_loss_line = None
         for line in exchange_loss_line.move_id.line_id:
             if line.account_id.id == self.account_fx_expense_id:

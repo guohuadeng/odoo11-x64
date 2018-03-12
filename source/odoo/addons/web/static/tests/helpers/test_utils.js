@@ -18,6 +18,7 @@ var dom = require('web.dom');
 var session = require('web.session');
 var MockServer = require('web.MockServer');
 var Widget = require('web.Widget');
+var view_registry = require('web.view_registry');
 
 var DebouncedField = basic_fields.DebouncedField;
 
@@ -130,7 +131,7 @@ function createAsyncView(params) {
 
     // add mock environment: mock server, session, fieldviewget, ...
     var mockServer = addMockEnvironment(widget, params);
-    var viewInfo = mockServer.fieldsViewGet(params.arch, params.model, params.toolbar);
+    var viewInfo = mockServer.fieldsViewGet(params);
 
     // create the view
     var viewOptions = {
@@ -144,7 +145,13 @@ function createAsyncView(params) {
 
     _.extend(viewOptions, params.viewOptions);
 
-    var view = new params.View(viewInfo, viewOptions);
+
+    if (viewInfo.arch.attrs.js_class) {
+        var jsClsssView = view_registry.get(viewInfo.arch.attrs.js_class);
+        var view = new jsClsssView(viewInfo, viewOptions);
+    } else{
+        var view = new params.View(viewInfo, viewOptions);
+    }
 
     // make sure images do not trigger a GET on the server
     $target.on('DOMNodeInserted.removeSRC', function () {
@@ -152,7 +159,7 @@ function createAsyncView(params) {
     });
 
     // reproduce the DOM environment of views
-    var $web_client = $('<div>').addClass('o_web_client').appendTo($target);
+    var $web_client = $('<div>').addClass('o_web_client').prependTo($target);
     var $control_panel = $('<div>').addClass('o_control_panel').appendTo($web_client);
     var $content = $('<div>').addClass('o_content').appendTo($web_client);
     var $view_manager = $('<div>').addClass('o_view_manager_content').appendTo($content);
@@ -167,6 +174,7 @@ function createAsyncView(params) {
     return view.getController(widget).then(function (view) {
         // override the view's 'destroy' so that it calls 'destroy' on the widget
         // instead, as the widget is the parent of the view and the mockServer.
+        view.__destroy = view.destroy;
         view.destroy = function () {
             // remove the override to properly destroy the view and its children
             // when it will be called the second time (by its parent)
@@ -257,13 +265,22 @@ function addMockEnvironment(widget, params) {
     var initialDebounce = DebouncedField.prototype.DEBOUNCE;
     DebouncedField.prototype.DEBOUNCE = params.fieldDebounce || 0;
     var initialSession, initialConfig, initialParameters;
+    initialSession = _.extend({}, session);
+    session.getTZOffset = function () {
+        return 0; // by default, but may be overriden in specific tests
+    };
     if ('session' in params) {
-        initialSession = _.extend({}, session);
         _.extend(session, params.session);
     }
     if ('config' in params) {
-        initialConfig = _.extend({}, config);
-        _.extend(config, params.config);
+        initialConfig = _.clone(config);
+        initialConfig.device = _.clone(config.device);
+        if ('device' in params.config) {
+            _.extend(config.device, params.config.device);
+        }
+        if ('debug' in params.config) {
+            config.debug = params.config.debug;
+        }
     }
     if ('translateParameters' in params) {
         initialParameters = _.extend({}, core._t.database.parameters);
@@ -283,8 +300,8 @@ function addMockEnvironment(widget, params) {
             for (key in session) {
                 delete session[key];
             }
-            _.extend(session, initialSession);
         }
+        _.extend(session, initialSession);
         if ('config' in params) {
             for (key in config) {
                 delete config[key];
@@ -319,10 +336,17 @@ function addMockEnvironment(widget, params) {
             var view_type = view_descr[1];
             var key = [model, view_id, view_type].join(',');
             var arch = params.archs[key];
+            var viewParams = {
+                arch: arch,
+                model: model,
+                viewOptions: {
+                    context: event.data.context.eval(),
+                },
+            };
             if (!arch) {
                 throw new Error('No arch found for key ' + key);
             }
-            views[view_type] = mockServer.fieldsViewGet(arch, model);
+            views[view_type] = mockServer.fieldsViewGet(viewParams);
         });
 
         event.data.on_success(views);
@@ -388,11 +412,16 @@ function dragAndDrop($el, $to, options) {
     elementCenter.top += $el.outerHeight()/2;
 
     var toOffset = $to.offset();
+    toOffset.top += $to.outerHeight()/2;
     toOffset.left += $to.outerWidth()/2;
-    if (position === 'center') {
-        toOffset.top += $to.outerHeight()/2;
+    if (position === 'top') {
+        toOffset.top -= $to.outerHeight()/2;
     } else if (position === 'bottom') {
-        toOffset.top += $to.outerHeight();
+        toOffset.top += $to.outerHeight()/2;
+    } else if (position === 'left') {
+        toOffset.left -= $to.outerWidth()/2;
+    } else if (position === 'right') {
+        toOffset.left += $to.outerWidth()/2;
     }
 
     $el.trigger($.Event("mousedown", {
@@ -467,6 +496,20 @@ function triggerPositionalMouseEvent(x, y, type){
 }
 
 /**
+ * simulate a keypress event for a given character
+ * @param {string} the character
+ */
+function triggerKeypressEvent(char) {
+    var keycode;
+    if (char === "Enter") {
+        keycode = $.ui.keyCode.ENTER;
+    } else {
+        keycode = char.charCodeAt(0);
+    }
+    return $('body').trigger($.Event('keypress', {which: keycode, keyCode: keycode}));
+}
+
+/**
  * Removes the src attribute on images and iframes to prevent not found errors,
  * and optionally triggers an rpc with the src url as route on a widget.
  *
@@ -491,6 +534,87 @@ function removeSrcAttribute($el, widget) {
     });
 }
 
+var patches = {};
+/**
+ * Patches a given Class or Object with the given properties.
+ *
+ * @param {Class|Object} target
+ * @param {Object} props
+ */
+function patch (target, props) {
+    var patchID = _.uniqueId('patch_');
+    target.__patchID = patchID;
+    patches[patchID] = {
+        target: target,
+        otherPatchedProps: [],
+        ownPatchedProps: [],
+    };
+    if (target.prototype) {
+        _.each(props, function (value, key) {
+            if (target.prototype.hasOwnProperty(key)) {
+                patches[patchID].ownPatchedProps.push({
+                    key: key,
+                    initialValue: target.prototype[key],
+                });
+            } else {
+                patches[patchID].otherPatchedProps.push(key);
+            }
+        });
+        target.include(props);
+    } else {
+        _.each(props, function (value, key) {
+            if (key in target) {
+                var oldValue = target[key];
+                patches[patchID].ownPatchedProps.push({
+                    key: key,
+                    initialValue: oldValue,
+                });
+                if (typeof value === 'function') {
+                    target[key] = function () {
+                        var oldSuper = this._super;
+                        this._super = oldValue;
+                        var result = value.apply(this, arguments);
+                        if (oldSuper === undefined) {
+                            delete this._super;
+                        } else {
+                            this._super = oldSuper;
+                        }
+                        return result;
+                    };
+                } else {
+                    target[key] = value;
+                }
+            } else {
+                patches[patchID].otherPatchedProps.push(key);
+                target[key] = value;
+            }
+        });
+    }
+}
+/**
+ * Unpatches a given Class or Object.
+ *
+ * @param {Class|Object} target
+ */
+function unpatch(target) {
+    var patchID = target.__patchID;
+    var patch = patches[patchID];
+    _.each(patch.ownPatchedProps, function (p) {
+        target[p.key] = p.initialValue;
+    });
+    if (target.prototype) {
+        _.each(patch.otherPatchedProps, function (key) {
+            delete target.prototype[key];
+        });
+    } else {
+        _.each(patch.otherPatchedProps, function (key) {
+            delete target[key];
+        });
+    }
+    delete patches[patchID];
+    delete target.__patchID;
+}
+
 // Loading static files cannot be properly simulated when their real content is
 // really needed. This is the case for static XML files so we load them here,
 // before starting the qunit test suite.
@@ -506,16 +630,19 @@ return $.when(
         QUnit.start();
     }, 0);
     return {
-        intercept: intercept,
-        observe: observe,
-        createView: createView,
+        addMockEnvironment: addMockEnvironment,
         createAsyncView: createAsyncView,
         createModel: createModel,
-        addMockEnvironment: addMockEnvironment,
+        createView: createView,
         dragAndDrop: dragAndDrop,
+        intercept: intercept,
+        observe: observe,
+        patch: patch,
+        removeSrcAttribute: removeSrcAttribute,
+        triggerKeypressEvent: triggerKeypressEvent,
         triggerMouseEvent: triggerMouseEvent,
         triggerPositionalMouseEvent: triggerPositionalMouseEvent,
-        removeSrcAttribute: removeSrcAttribute,
+        unpatch: unpatch,
     };
 });
 

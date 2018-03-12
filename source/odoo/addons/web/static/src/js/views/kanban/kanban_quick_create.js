@@ -16,6 +16,7 @@ var AbstractQuickCreate = Widget.extend({
         'keypress input': '_onKeypress',
         'mousedown .o_kanban_add': '_onMousedown',
         'mousedown .o_kanban_cancel': '_onMousedown',
+        'focusout': '_onFocusOut',
     },
 
     //--------------------------------------------------------------------------
@@ -27,14 +28,15 @@ var AbstractQuickCreate = Widget.extend({
      * has been done
      *
      * @private
+     * @param {Object} [options] dict of options to pass to call to '_notifyAdd'
      */
-    _add: function () {
+    _add: function (options) {
         var value = this.$input.val();
         this.$input.val('');
         if (/^\s*$/.test(value)) {
             return;
         }
-        this._notifyAdd(value);
+        this._notifyAdd(value, options);
         this.$input.focus();
     },
     /**
@@ -52,7 +54,7 @@ var AbstractQuickCreate = Widget.extend({
      * @abstract
      * @private
      */
-    _notifyAdd: function (name) {
+    _notifyAdd: function (name, options) {
     },
 
     //--------------------------------------------------------------------------
@@ -72,6 +74,17 @@ var AbstractQuickCreate = Widget.extend({
      */
     _onCancelClicked: function () {
         this._cancel();
+    },
+    /**
+     * Cancels quick creation on focusout input event
+     *
+     * @private
+     * @param {KeyEvent} ev
+     */
+    _onFocusOut: function (ev) {
+        if (!this.$input.val()) {
+            this._cancel();
+        }
     },
     /**
      * Cancels quick creation on escape keydown event
@@ -114,6 +127,10 @@ var AbstractQuickCreate = Widget.extend({
 
 var RecordQuickCreate = AbstractQuickCreate.extend({
     template: "KanbanView.QuickCreate",
+    events: _.extend({}, AbstractQuickCreate.prototype.events, {
+        'click .o_kanban_edit': '_onEditClicked',
+        'mousedown .o_kanban_edit': '_onMousedown',
+    }),
     /**
      * @override
      * @param {Widget} parent
@@ -166,9 +183,15 @@ var RecordQuickCreate = AbstractQuickCreate.extend({
      * @override
      * @private
      * @param {string} value
+     * @param {Object} [options]
+     * @param {boolean} [options.openRecord] set to true to directly open the
+     *   newly created record in a form view (in edit mode)
      */
-    _notifyAdd: function (value) {
-        this.trigger_up('quick_create_add_record', {value: value});
+    _notifyAdd: function (value, options) {
+        this.trigger_up('quick_create_add_record', {
+            value: value,
+            openRecord: options && options.openRecord || false,
+        });
     },
 
     //--------------------------------------------------------------------------
@@ -178,14 +201,24 @@ var RecordQuickCreate = AbstractQuickCreate.extend({
     /**
      * Add the default value for the record name again after creating
      * the previous record.
-     * 
+     *
      * @override
+     * @private
+     */
+    _onAddClicked: function () {
+        this._super.apply(this, arguments);
+        this._addDefaultName();
+    },
+    /**
+     * Validates the quick creation and directly opens the record in a form
+     * view in edit mode.
+     *
      * @private
      * @param {MouseEvent} event
      */
-    _onAddClicked: function (event) {
-        this._super.apply(this, arguments);
-        this._addDefaultName();
+    _onEditClicked: function (event) {
+        event.stopPropagation();
+        this._add({openRecord: true});
     },
 });
 

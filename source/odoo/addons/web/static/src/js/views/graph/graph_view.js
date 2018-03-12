@@ -19,6 +19,14 @@ var _lt = core._lt;
 var GraphView = AbstractView.extend({
     display_name: _lt('Graph'),
     icon: 'fa-bar-chart',
+    cssLibs: [
+        '/web/static/lib/nvd3/nv.d3.css'
+    ],
+    jsLibs: [
+        '/web/static/lib/nvd3/d3.v3.js',
+        '/web/static/lib/nvd3/nv.d3.js',
+        '/web/static/src/js/libs/nvd3.js'
+    ],
     config: {
         Model: GraphModel,
         Controller: Controller,
@@ -27,7 +35,7 @@ var GraphView = AbstractView.extend({
     /**
      * @override
      */
-    init: function (viewInfo, params) {
+    init: function (viewInfo) {
         this._super.apply(this, arguments);
 
         var measure;
@@ -57,9 +65,9 @@ var GraphView = AbstractView.extend({
         this.controllerParams.measures = measures;
         this.rendererParams.stacked = viewInfo.arch.attrs.stacked !== "False";
 
-        this.loadParams.mode = params.context.graph_mode || viewInfo.arch.attrs.type || 'bar';
-        this.loadParams.measure = params.context.graph_measure || measure || '__count__';
-        this.loadParams.groupBys = params.context.graph_groupbys || groupBys || [];
+        this.loadParams.mode = viewInfo.arch.attrs.type || 'bar';
+        this.loadParams.measure = measure || '__count__';
+        this.loadParams.groupBys = groupBys || [];
         this.loadParams.fields = viewInfo.fields;
     },
 });

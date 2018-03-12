@@ -29,6 +29,7 @@ var chat_unread_counter = 0;
 var unread_conversation_counter = 0;
 var emojis = [];
 var emoji_substitutions = {};
+var emoji_unicodes = {};
 var needaction_counter = 0;
 var starred_counter = 0;
 var mention_partner_suggestions = [];
@@ -81,6 +82,11 @@ function add_message (data, options) {
         _.each(msg.channel_ids, function (channel_id) {
             var channel = chat_manager.get_channel(channel_id);
             if (channel) {
+                // update the channel's last message (displayed in the channel
+                // preview, in mobile)
+                if (!channel.last_message || msg.id > channel.last_message.id) {
+                    channel.last_message = msg;
+                }
                 add_to_cache(msg, []);
                 if (options.domain && options.domain !== []) {
                     add_to_cache(msg, options.domain);
@@ -94,7 +100,7 @@ function add_message (data, options) {
                         update_channel_unread_counter(channel, channel.unread_counter+1);
                     }
                     if (channel.is_chat && options.show_notification) {
-                        if (!client_action_open && config.device.size_class !== config.device.SIZES.XS) {
+                        if (!client_action_open && !config.device.isMobile) {
                             // automatically open chat window
                             chat_manager.bus.trigger('open_chat', channel, { passively: true });
                         }
@@ -257,6 +263,9 @@ function add_channel (data, options) {
     } else {
         channel = chat_manager.make_channel(data, options);
         channels.push(channel);
+        if (data.last_message) {
+            channel.last_message = add_message(data.last_message);
+        }
         // In case of a static channel (Inbox, Starred), the name is translated thanks to _lt
         // (lazy translate). In this case, channel.name is an object, not a string.
         channels = _.sortBy(channels, function (channel) { return _.isString(channel.name) ? channel.name.toLowerCase() : '' });
@@ -617,7 +626,7 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
         Mixins.EventDispatcherMixin.init.call(this);
         this.setParent(parent);
 
-        this.bus = new Bus();
+        this.bus = new Bus(this);
         this.bus.on('client_action_open', null, function (open) {
             client_action_open = open;
         });
@@ -637,7 +646,8 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
 
     start: function () {
         this.is_ready = session.is_bound.then(function(){
-                return session.rpc('/mail/client_action');
+                var context = _.extend({isMobile: config.device.isMobile}, session.user_context);
+                return session.rpc('/mail/client_action', {context: context});
             }).then(this._onMailClientAction.bind(this));
 
         add_channel({
@@ -670,8 +680,12 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
             if (s.shortcode_type === 'text') {
                 canned_responses.push(_.pick(s, ['id', 'source', 'substitution']));
             } else {
-                emojis.push(_.pick(s, ['id', 'source', 'substitution', 'description']));
+                emojis.push(_.pick(s, ['id', 'source', 'unicode_source', 'substitution', 'description']));
                 emoji_substitutions[_.escape(s.source)] = s.substitution;
+                if (s.unicode_source) {
+                    emoji_substitutions[_.escape(s.unicode_source)] = s.substitution;
+                    emoji_unicodes[_.escape(s.source)] = s.unicode_source;
+                }
             }
         });
         bus.start_polling();
@@ -760,6 +774,14 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
             body: body,
             attachment_ids: data.attachment_ids,
         };
+
+        // Replace emojis by their unicode character
+        _.each(_.keys(emoji_unicodes), function (key) {
+            var escaped_key = String(key).replace(/([.*+?=^!:${}()|[\]\/\\])/g, '\\$1');
+            var regexp = new RegExp("(\\s|^)(" + escaped_key + ")(?=\\s|$)", "g");
+            msg.body = msg.body.replace(regexp, "$1" + emoji_unicodes[key]);
+        });
+
         if ('subject' in data) {
             msg.subject = data.subject;
         }
@@ -1010,11 +1032,12 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
     create_channel: function (name, type) {
         var method = type === "dm" ? "channel_get" : "channel_create";
         var args = type === "dm" ? [[name]] : [name, type];
-
+        var context = _.extend({isMobile: config.device.isMobile}, session.user_context);
         return this._rpc({
                 model: 'mail.channel',
                 method: method,
                 args: args,
+                kwargs: {context: context},
             })
             .then(add_channel);
     },
@@ -1134,9 +1157,10 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
 
     get_channels_preview: function (channels) {
         var channels_preview = _.map(channels, function (channel) {
+            var info;
             if (channel.channel_ids && _.contains(channel.channel_ids,"channel_inbox")) {
                 // map inbox(mail_message) data with existing channel/chat template
-                var info = _.pick(channel, 'id', 'body', 'avatar_src', 'res_id', 'model', 'module_icon', 'subject','date', 'record_name', 'status', 'displayed_author', 'email_from', 'unread_counter');
+                info = _.pick(channel, 'id', 'body', 'avatar_src', 'res_id', 'model', 'module_icon', 'subject','date', 'record_name', 'status', 'displayed_author', 'email_from', 'unread_counter');
                 info.last_message = {
                     body: info.body,
                     date: info.date,
@@ -1148,8 +1172,8 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
                 info.id = 'channel_inbox';
                 return info;
             }
-            var info = _.pick(channel, 'id', 'is_chat', 'name', 'status', 'unread_counter');
-            info.last_message = _.last(channel.cache['[]'].messages);
+            info = _.pick(channel, 'id', 'is_chat', 'name', 'status', 'unread_counter');
+            info.last_message = channel.last_message || _.last(channel.cache['[]'].messages);
             if (!info.is_chat) {
                 info.image_src = '/web/image/mail.channel/'+channel.id+'/image_small';
             } else if (channel.direct_partner_id) {
@@ -1181,9 +1205,22 @@ var ChatManager =  Class.extend(Mixins.EventDispatcherMixin, ServicesMixin, {
                     channel_preview.last_message = add_message(channel.last_message);
                 }
             });
-            return _.filter(channels_preview, function (channel) {
-                return channel.last_message;  // remove empty channels
+            // sort channels: 1. unread, 2. chat, 3. date of last msg
+            channels_preview.sort(function (c1, c2) {
+                return Math.min(1, c2.unread_counter) - Math.min(1, c1.unread_counter) ||
+                       c2.is_chat - c1.is_chat ||
+                       !!c2.last_message - !!c1.last_message ||
+                       (c2.last_message && c2.last_message.date.diff(c1.last_message.date));
             });
+
+            // generate last message preview (inline message body and compute date to display)
+            _.each(channels_preview, function (channel) {
+                if (channel.last_message) {
+                    channel.last_message_preview = chat_manager.get_message_body_preview(channel.last_message.body);
+                    channel.last_message_date = channel.last_message.date.fromNow();
+                }
+            });
+            return channels_preview;
         });
     },
     get_message_body_preview: function (message_body) {

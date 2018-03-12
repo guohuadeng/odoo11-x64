@@ -69,6 +69,7 @@ var Chatter = Widget.extend(chat_mixin, {
             new_message_btn: !!this.fields.thread,
             log_note_btn: this.hasLogButton,
             schedule_activity_btn: !!this.fields.activity,
+            isMobile: config.device.isMobile,
         }));
 
         // start and append the widgets
@@ -122,15 +123,11 @@ var Chatter = Widget.extend(chat_mixin, {
     // private
     _closeComposer: function (force) {
         if (this.composer && (this.composer.is_empty() || force)) {
+            this.$el.removeClass('o_chatter_composer_active');
+            this.$('.o_chatter_button_new_message, .o_chatter_button_log_note').removeClass('o_active');
             this.composer.do_hide();
             this.composer.clear_composer();
-            this._muteNewMessageButton(false);
         }
-    },
-    _muteNewMessageButton: function (mute) {
-        this.$('.o_chatter_button_new_message')
-            .toggleClass('btn-primary', !mute)
-            .toggleClass('btn-default', mute);
     },
     _openComposer: function (options) {
         var self = this;
@@ -168,8 +165,12 @@ var Chatter = Widget.extend(chat_mixin, {
             });
             self.composer.on('need_refresh', self, self.trigger_up.bind(self, 'reload'));
             self.composer.on('close_composer', null, self._closeComposer.bind(self, true));
+
+            self.$el.addClass('o_chatter_composer_active');
+            self.$('.o_chatter_button_new_message, .o_chatter_button_log_note').removeClass('o_active');
+            self.$('.o_chatter_button_new_message').toggleClass('o_active', !self.composer.options.is_log);
+            self.$('.o_chatter_button_log_note').toggleClass('o_active', self.composer.options.is_log);
         });
-        this._muteNewMessageButton(true);
     },
     _render: function (def) {
         // the rendering of the chatter is aynchronous: relational data of its fields needs to be
@@ -257,7 +258,7 @@ var Chatter = Widget.extend(chat_mixin, {
                     var suggested_partners = [];
                     var thread_recipients = result[self.context.default_res_id];
                     _.each(thread_recipients, function (recipient) {
-                        var parsed_email = utils.parse_email(recipient[1]);
+                        var parsed_email = recipient[1] && utils.parse_email(recipient[1]);
                         suggested_partners.push({
                             checked: true,
                             partner_id: recipient[0],
@@ -288,7 +289,10 @@ var Chatter = Widget.extend(chat_mixin, {
         if (this.fields.thread && event.data.thread) {
             fieldNames.push(this.fields.thread.name);
         }
-        this.trigger_up('reload', {fieldNames: fieldNames});
+        this.trigger_up('reload', {
+            fieldNames: fieldNames,
+            keepChanges: true,
+        });
     },
     _onScheduleActivity: function () {
         this.fields.activity.scheduleActivity(false);

@@ -109,7 +109,6 @@
                             <field name="tracking" widget="radio" attrs="{'invisible':[('type', 'in', ['service', 'digital'])]}"/>
                         </group>
                         <group string="Counterpart Locations" name="stock_property" groups="base.group_no_one">
-                            <field name="property_stock_procurement" domain="[('usage','=','procurement')]"/>
                             <field name="property_stock_production" domain="[('usage','=','production')]"/>
                             <field name="property_stock_inventory" domain="[('usage','=','inventory')]"/>
                         </group>
@@ -167,7 +166,6 @@
                 <sheet position="before">
                     <header>
                         <button name="%(action_view_change_product_quantity)d" string="Update Qty On Hand" type="action" attrs="{'invisible': [('type', '!=', 'product')]}"/>
-                        <button string="Procurement Request" name="%(stock.act_make_procurement)d" type="action" attrs="{'invisible': [('type', '!=', 'product')]}"/>
                     </header>
                 </sheet>
             </field>
@@ -184,10 +182,6 @@
                         <button string="Update Qty On Hand"
                             type="action"
                             name="%(action_view_change_product_quantity)d"
-                            attrs="{'invisible': [('type', '!=', 'product')]}"/>
-                        <button string="Procurement Request"
-                            type="action"
-                            name="%(stock.act_make_procurement)d"
                             attrs="{'invisible': [('type', '!=', 'product')]}"/>
                     </header>
                     <button name="toggle_active" position="before">
@@ -211,9 +205,9 @@
                                 <span class="o_stat_text">Forecasted</span>
                             </div>
                         </button>
-                       <button string="Traceability"
-                            type="action"
-                            name= "%(act_product_stock_move_open)d"
+                       <button string="Product Moves"
+                            type="object"
+                            name= "action_view_stock_move_lines"
                             attrs="{'invisible':[('type', 'not in', ['product', 'consu'])]}"
                             class="oe_stat_button" icon="fa-arrows-v"
                             groups="stock.group_stock_user"/>
@@ -239,6 +233,10 @@
                             name="action_view_routes"
                             attrs="{'invisible':[('type', '!=', 'product')]}"
                             class="oe_stat_button" icon="fa-cogs" groups="base.group_no_one"/>
+                        <button string="Lot/Serial Number" type="object"
+                            name="action_open_product_lot"
+                            attrs="{'invisible': [('tracking', '=', 'none')]}"
+                            class="oe_stat_button" icon="fa-bars" groups="stock.group_production_lot"/>
                     </button>
                 </data>
             </field>
@@ -253,7 +251,6 @@
                 <data>
                     <header position="inside" >
                         <button name="%(action_view_change_product_quantity)d" string="Update Qty On Hand" type="action" attrs="{'invisible': [('type', '!=', 'product')]}"/>
-                        <button string="Procurement Request" name="%(stock.act_make_procurement)d" type="action" attrs="{'invisible': [('type', '!=', 'product')]}"/>
                     </header>
                     <button name="toggle_active" position="before">
                         <button type="object"
@@ -267,16 +264,16 @@
                             attrs="{'invisible':[('type', '!=', 'product')]}"
                             class="oe_stat_button" icon="fa-building-o">
                             <div class="o_field_widget o_stat_info">
-                                <span class="o_stat_value"><field name="virtual_available" widget="integer"/>
+                                <span class="o_stat_value"><field name="virtual_available" widget="statinfo" nolabel="1"/>
                                     <span attrs="{'invisible':[('outgoing_qty', '=', 0),('incoming_qty','=',0)]}" groups="base.group_no_one">
-                                        (-<field name="outgoing_qty" widget="integer"/>+<field name="incoming_qty" widget="integer"/>)
+                                        (-<field name="outgoing_qty" widget="statinfo" nolabel="1"/>+<field name="incoming_qty" widget="statinfo" nolabel="1"/>)
                                     </span>
                                 </span>
                                 <span class="o_stat_text">Forecasted</span>
                             </div>
                         </button>
-                        <button string="Traceability" type="object"
-                            name= "action_view_stock_moves"
+                        <button string="Product Moves" type="object"
+                            name= "action_view_stock_move_lines"
                             attrs="{'invisible':[('type', 'not in', ['product', 'consu'])]}"
                             class="oe_stat_button" icon="fa-arrows-v"
                             groups="stock.group_stock_user"/>
@@ -305,12 +302,20 @@
                             attrs="{'invisible':[('type', '!=', 'product')]}"
                             class="oe_stat_button" icon="fa-cogs"
                             groups="base.group_no_one"/>
+                        <button string="Lot/Serial Number" type="object"
+                            name="action_open_product_lot"
+                            attrs="{'invisible': [('tracking', '=', 'none')]}"
+                            class="oe_stat_button" icon="fa-bars" groups="stock.group_production_lot"/>
                     </button>
 
                     <!-- change attrs of fields added in view_template_property_form
                     to restrict the display for templates -->
                     <xpath expr="//group[@name='group_lots_and_weight']" position="attributes">
                         <attribute name="attrs">{'invisible':['|', ('type', 'not in', ['product', 'consu']), ('product_variant_count', '&gt;', 1)]}</attribute>
+                    </xpath>
+
+                    <xpath expr="//group[@name='group_lots_and_weight']" position="inside">
+                        <field name="responsible_id"/>
                     </xpath>
                 </data>
             </field>
@@ -333,7 +338,7 @@
         parent="stock.menu_stock_inventory_control" sequence="1"/>
     <menuitem id="product_product_menu" name="Product Variants" action="product.product_normal_action"
         parent="menu_stock_inventory_control" sequence="2" groups="product.group_product_variant"/>
-    <menuitem id="menu_product_packagings" name="Product Packages" parent="stock.menu_packages_config" action="product.action_packaging_view" groups="product.group_stock_packaging"/>
+    <menuitem id="menu_product_packagings" name="Product Packages" parent="stock.menu_product_in_config_stock" action="product.action_packaging_view" groups="product.group_stock_packaging"/>
 
     </data>
 </odoo>

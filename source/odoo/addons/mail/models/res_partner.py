@@ -4,7 +4,6 @@
 import logging
 import threading
 
-from odoo.tools import pycompat
 from odoo.tools.misc import split_every
 
 from odoo import _, api, fields, models, registry, SUPERUSER_ID
@@ -19,7 +18,6 @@ class Partner(models.Model):
     _name = "res.partner"
     _inherit = ['res.partner', 'mail.thread', 'mail.activity.mixin']
     _mail_flat_thread = False
-    _mail_mass_mailing = _('Customers')
 
     message_bounce = fields.Integer('Bounce', help="Counter of the number of bounced emails for this contact", default=0)
     opt_out = fields.Boolean(
@@ -56,7 +54,6 @@ class Partner(models.Model):
             website_url = 'http://%s' % user.company_id.website if not user.company_id.website.lower().startswith(('http:', 'https:')) else user.company_id.website
         else:
             website_url = False
-        company_name = user.company_id.name
 
         model_name = False
         if message.model:
@@ -65,7 +62,7 @@ class Partner(models.Model):
         record_name = message.record_name
 
         tracking = []
-        for tracking_value in message.tracking_value_ids:
+        for tracking_value in self.env['mail.tracking.value'].sudo().search([('mail_message_id', '=', message.id)]):
             tracking.append((tracking_value.field_desc,
                              tracking_value.get_old_display_value()[0],
                              tracking_value.get_new_display_value()[0]))
@@ -76,9 +73,15 @@ class Partner(models.Model):
         if message.res_id and message.model in self.env:
             record = self.env[message.model].browse(message.res_id)
 
+        company = user.company_id;
+        if record and hasattr(record, 'company_id'):
+            company = record.company_id;
+        company_name = company.name;
+
         return {
             'signature': signature,
             'website_url': website_url,
+            'company': company,
             'company_name': company_name,
             'model_name': model_name,
             'record': record,
@@ -175,7 +178,7 @@ class Partner(models.Model):
 
         emails = self.env['mail.mail']
         recipients_nbr, recipients_max = 0, 50
-        for email_type, recipient_template_values in pycompat.items(recipients):
+        for email_type, recipient_template_values in recipients.items():
             if recipient_template_values['followers']:
                 # generate notification email content
                 template_fol_values = dict(base_template_ctx, **recipient_template_values)  # fixme: set button_unfollow to none

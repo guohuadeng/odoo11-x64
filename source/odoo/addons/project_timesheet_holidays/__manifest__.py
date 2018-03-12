@@ -15,10 +15,13 @@ on leaves. Project and task can be configured company-wide.
     """,
     'depends': ['hr_timesheet', 'hr_holidays'],
     'data': [
-        'views/hr_timesheet_config_settings_views.xml',
+        'views/res_config_settings_views.xml',
         'views/hr_holidays_views.xml',
+        'security/ir.model.access.csv',
+
     ],
     'demo': [],
     'installable': True,
     'auto_install': True,
+    'post_init_hook': 'post_init',
 }

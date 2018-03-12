@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-
+import base64
 import os
 import re
 
 from odoo import api, fields, models, tools, _
-from odoo.exceptions import ValidationError
-from odoo.tools import pycompat
+from odoo.exceptions import ValidationError, UserError
 
 
 class Company(models.Model):
@@ -16,19 +15,10 @@ class Company(models.Model):
 
     @api.multi
     def copy(self, default=None):
-        """
-        Duplicating a company without specifying a partner duplicate the partner
-        """
-        self.ensure_one()
-        default = dict(default or {})
-        if not default.get('name') and not default.get('partner_id'):
-            copy_partner = self.partner_id.copy()
-            default['partner_id'] = copy_partner.id
-            default['name'] = copy_partner.name
-        return super(Company, self).copy(default)
+        raise UserError(_('Duplicating a company is not allowed. Please create a new company instead.'))
 
     def _get_logo(self):
-        return open(os.path.join(tools.config['root_path'], 'addons', 'base', 'res', 'res_company_logo.png'), 'rb') .read().encode('base64')
+        return base64.b64encode(open(os.path.join(tools.config['root_path'], 'addons', 'base', 'res', 'res_company_logo.png'), 'rb') .read())
 
     @api.model
     def _get_euro(self):
@@ -145,8 +135,8 @@ class Company(models.Model):
         self.ensure_one()
         currency_id = self._get_user_currency()
         if country_id:
-            currency_id = self.env['res.country'].browse(country_id).currency_id.id
-        return {'value': {'currency_id': currency_id}}
+            currency_id = self.env['res.country'].browse(country_id).currency_id
+        return {'value': {'currency_id': currency_id.id}}
 
     @api.onchange('country_id')
     def _onchange_country_id_wrapper(self):
@@ -154,7 +144,7 @@ class Company(models.Model):
         if self.country_id:
             res['domain']['state_id'] = [('country_id', '=', self.country_id.id)]
         values = self.on_change_country(self.country_id.id)['value']
-        for fname, value in pycompat.items(values):
+        for fname, value in values.items():
             setattr(self, fname, value)
         return res
 
@@ -244,16 +234,19 @@ class Company(models.Model):
     @api.multi
     def open_company_edit_report(self):
         self.ensure_one()
-        return self.env['base.config.settings'].open_company()
+        return self.env['res.config.settings'].open_company()
 
     @api.multi
-    def set_report_template(self):
-        self.ensure_one()
-        if self.env.context.get('report_template', False):
-            self.external_report_layout = self.env.context['report_template']
-        if self.env.context.get('default_report_name'):
-            document = self.env.get(self.env.context['active_model']).browse(self.env.context['active_id'])
-            report_name = self.env.context['default_report_name']
-            report_action = self.env['ir.actions.report'].search([('report_name', '=', report_name)], limit=1)
-            return report_action.report_action(document, config=False)
-        return False
+    def write_company_and_print_report(self, values):
+        res = self.write(values)
+
+        report_name = values.get('default_report_name')
+        active_ids = values.get('active_ids')
+        active_model = values.get('active_model')
+        if report_name and active_ids and active_model:
+            docids = self.env[active_model].browse(active_ids)
+            return (self.env['ir.actions.report'].search([('report_name', '=', report_name)], limit=1)
+                        .with_context(values)
+                        .report_action(docids))
+        else:
+            return res

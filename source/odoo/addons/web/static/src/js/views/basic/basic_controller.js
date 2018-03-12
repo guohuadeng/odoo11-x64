@@ -19,6 +19,7 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
     custom_events: _.extend({}, AbstractController.prototype.custom_events, FieldManagerMixin.custom_events, {
         discard_changes: '_onDiscardChanges',
         reload: '_onReload',
+        set_dirty: '_onSetDirty',
         sidebar_data_asked: '_onSidebarDataAsked',
         translate: '_onTranslate',
     }),
@@ -71,7 +72,7 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
             return $.when(false);
         }
 
-        var message = _t("The record has been modified, your changes will be discarded. Are you sure you want to ?");
+        var message = _t("The record has been modified, your changes will be discarded. Do you want to proceed?");
         var def = $.Deferred();
         var dialog = Dialog.confirm(this, message, {
             title: _t("Warning"),
@@ -114,7 +115,7 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
     /**
      * Method that will be overriden by the views with the ability to have selected ids
      *
-     * @returns []
+     * @returns {Array}
      */
     getSelectedIds: function () {
         return [];
@@ -270,6 +271,13 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
      * @returns {Deferred}
      */
     _confirmChange: function (id, fields, e) {
+        if (e.name === 'discard_changes' && e.target.reset) {
+            // the target of the discard event is a field widget.  In that
+            // case, we simply want to reset the specific field widget,
+            // not the full view
+            return  e.target.reset(this.model.get(e.target.dataPointID), e, true);
+        }
+
         var state = this.model.get(this.handle);
         return this.renderer.confirmChange(state, id, fields, e);
     },
@@ -329,11 +337,11 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
                 if (options && options.readonlyIfRealDiscard && !needDiscard) {
                     return;
                 }
-                if (needDiscard) { // Just some optimization
-                    self.model.discardChanges(recordID);
-                }
+                self.model.discardChanges(recordID);
                 if (self.model.isNew(recordID)) {
-                    self._abandonRecord(recordID);
+                    if (self.model.canBeAbandoned(recordID)) {
+                        self._abandonRecord(recordID);
+                    }
                     return;
                 }
                 return self._confirmSave(recordID);
@@ -448,7 +456,11 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
      */
     _setMode: function (mode, recordID) {
         if ((recordID || this.handle) === this.handle) {
-            return this.update({mode: mode}, {reload: false});
+            return this.update({mode: mode}, {reload: false}).then(function () {
+                // necessary to allow all sub widgets to use their dimensions in
+                // layout related activities, such as autoresize on fieldtexts
+                core.bus.trigger('DOM_updated');
+            });
         }
         return $.when();
     },
@@ -508,7 +520,7 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
                 // TODO this will tell the renderer to rerender the widget that
                 // asked for the discard but will unfortunately lose the click
                 // made on another row if any
-                self._confirmChange(self.handle, [ev.data.fieldName], ev)
+                self._confirmChange(recordID, [ev.data.fieldName], ev)
                     .always(ev.data.onSuccess);
             })
             .fail(ev.data.onFailure);
@@ -519,7 +531,7 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
      * in readonly (e.g. Priority).
      *
      * @private
-     * @param {OdooEvent}
+     * @param {OdooEvent} ev
      */
     _onFieldChanged: function (ev) {
         if (this.mode === 'readonly') {
@@ -541,6 +553,7 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
      *   reload
      */
     _onReload: function (event) {
+        event.stopPropagation(); // prevent other controllers from handling this request
         var data = event && event.data || {};
         var handle = data.db_id;
         if (handle) {
@@ -548,8 +561,19 @@ var BasicController = AbstractController.extend(FieldManagerMixin, {
             this.model.reload(handle).then(this._confirmSave.bind(this, handle));
         } else {
             // no db_id given, so reload the main record
-            this.reload({fieldNames: data.fieldNames});
+            this.reload({
+                fieldNames: data.fieldNames,
+                keepChanges: data.keepChanges || false,
+            });
         }
+    },
+    /**
+     * @private
+     * @param {OdooEvent} ev
+     */
+    _onSetDirty: function (ev) {
+        ev.stopPropagation(); // prevent other controllers from handling this request
+        this.model.setDirty(ev.data.dataPointID);
     },
     /**
      * Handler used to get all the data necessary when a custom action is

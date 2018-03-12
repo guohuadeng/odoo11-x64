@@ -81,7 +81,7 @@ return AbstractRenderer.extend({
             setTimeout(function () {
                 self.$el.empty();
                 var chart = self['_render' + _.str.capitalize(self.state.mode) + 'Chart']();
-                if (chart) {
+                if (chart && chart.tooltip.chartContainer) {
                     self.to_remove = chart.update;
                     nv.utils.onWindowResize(chart.update);
                     chart.tooltip.chartContainer(self.el);
@@ -161,8 +161,8 @@ return AbstractRenderer.extend({
 
         var chart = nv.models.multiBarChart();
         chart.options({
-          margin: {left: 120, bottom: 60},
-          delay: 250,
+          margin: {left: 80, bottom: 100, top: 80, right: 0},
+          delay: 100,
           transition: 10,
           showLegend: _.size(data) <= MAX_LEGEND_LENGTH,
           showXAxis: true,
@@ -310,7 +310,7 @@ return AbstractRenderer.extend({
 
         var chart = nv.models.lineChart();
         chart.options({
-          margin: {left: 120, bottom: 60},
+          margin: {left: 80, bottom: 100, top: 80, right: 0},
           useInteractiveGuideline: true,
           showLegend: _.size(data) <= MAX_LEGEND_LENGTH,
           showXAxis: true,

@@ -64,9 +64,11 @@ return core.Class.extend({
      * Loads various information concerning views: fields_view for each view,
      * the fields of the corresponding model, and optionally the filters.
      *
-     * @param {Object} [dataset] the dataset for which the views are loaded
-     * @param {Array} [views_descr] array of [view_id, view_type]
-     * @param {Object} [options] dictionnary of various options:
+     * @param {Object} params
+     * @param {String} params.model
+     * @param {Object} params.context
+     * @param {Array} params.views_descr array of [view_id, view_type]
+     * @param {Object} [options] dictionary of various options:
      *     - options.load_filters: whether or not to load the filters,
      *     - options.action_id: the action_id (required to load filters),
      *     - options.toolbar: whether or not a toolbar will be displayed,
@@ -281,15 +283,15 @@ return core.Class.extend({
         // the invisible attribute of a field is supposed to be static ("1" in
         // general), but not totally as it may use keys of the context
         // ("context.get('some_key')"). It is evaluated server-side, and the
-        // result is put inside the modifiers as a value of the '(tree_)invisible'
+        // result is put inside the modifiers as a value of the '(column_)invisible'
         // key, and the raw value is left in the invisible attribute (it is used
         // in debug mode for informational purposes).
         // this should change, for instance the server might set the evaluated
         // value in invisible, which could then be seen as static by the client,
         // and add another key in debug mode containing the raw value.
-        // for now, we do an hack to detect if the value is static and retrieve
-        // it from the modifiers,
-        if (attrs.invisible && attrs.modifiers.match('"(?:tree_)?invisible": ?true')) {
+        // for now, we look inside the modifiers and consider the value only if
+        // it is static (=== true),
+        if (attrs.modifiers.invisible === true || attrs.modifiers.column_invisible === true) {
             attrs.__no_fetch = true;
         }
 
@@ -305,18 +307,6 @@ return core.Class.extend({
                 viewType = viewType === 'tree' ? 'list' : viewType;
                 innerFieldsView.type = viewType;
                 attrs.views[viewType] = self._processFieldsView(_.extend({}, innerFieldsView));
-
-                // default_order is like:
-                //   'name,id desc'
-                // but we need it like:
-                //   [{name: 'id', asc: false}, {name: 'name', asc: true}]
-                var defaultOrder = innerFieldsView.arch.attrs.default_order;
-                if (defaultOrder) {
-                    attrs.orderedBy = _.map(defaultOrder.split(','), function (order) {
-                        order = order.trim().split(' ');
-                        return {name: order[0], asc: order[1] !== 'desc'};
-                    });
-                }
             });
             delete field.views;
         }
@@ -346,6 +336,36 @@ return core.Class.extend({
                     }
                 }
                 attrs.mode = mode;
+                if (mode in attrs.views) {
+                    var view = attrs.views[mode];
+                    var defaultOrder = view.arch.attrs.default_order;
+                    if (defaultOrder) {
+                        // process the default_order, which is like 'name,id desc'
+                        // but we need it like [{name: 'name', asc: true}, {name: 'id', asc: false}]
+                        attrs.orderedBy = _.map(defaultOrder.split(','), function (order) {
+                            order = order.trim().split(' ');
+                            return {name: order[0], asc: order[1] !== 'desc'};
+                        });
+                    } else {
+                        // if there is a field with widget `handle`, the x2many
+                        // needs to be ordered by this field to correctly display
+                        // the records
+                        var handleField = _.find(view.arch.children, function (child) {
+                            return child.attrs && child.attrs.widget === 'handle';
+                        });
+                        if (handleField) {
+                            attrs.orderedBy = [{name: handleField.attrs.name, asc: true}];
+                        }
+                    }
+
+                    attrs.columnInvisibleFields = {};
+                    _.each(view.arch.children, function (child) {
+                        if (child.attrs && child.attrs.modifiers) {
+                            attrs.columnInvisibleFields[child.attrs.name] =
+                                child.attrs.modifiers.column_invisible || false;
+                        }
+                    });
+                }
             }
             if (attrs.Widget.prototype.fieldsToFetch) {
                 attrs.viewType = 'default';
@@ -362,6 +382,11 @@ return core.Class.extend({
                 }
             }
         }
+
+        if (attrs.Widget.prototype.fieldDependencies) {
+            attrs.fieldDependencies = attrs.Widget.prototype.fieldDependencies;
+        }
+
         return attrs;
     },
     /**
@@ -379,9 +404,28 @@ return core.Class.extend({
             if (typeof node === 'string') {
                 return false;
             }
+            if (!_.isObject(node.attrs.modifiers)) {
+                node.attrs.modifiers = node.attrs.modifiers ? JSON.parse(node.attrs.modifiers) : {};
+            }
+            if (!_.isObject(node.attrs.options) && node.tag === 'button') {
+                node.attrs.options = node.attrs.options ? JSON.parse(node.attrs.options) : {};
+            }
             if (node.tag === 'field') {
                 fieldsInfo[node.attrs.name] = self._processField(viewType,
                     fields[node.attrs.name], node.attrs ? _.clone(node.attrs) : {});
+
+                if (fieldsInfo[node.attrs.name].fieldDependencies) {
+                    var deps = fieldsInfo[node.attrs.name].fieldDependencies;
+                    for (var dependency_name in deps) {
+                        var dependency_dict = {name: dependency_name, type: deps[dependency_name].type};
+                        if (!(dependency_name in fieldsInfo)) {
+                            fieldsInfo[dependency_name] = _.extend({}, dependency_dict, {options: deps[dependency_name].options || {}});
+                        }
+                        if (!(dependency_name in fields)) {
+                            fields[dependency_name] = dependency_dict;
+                        }
+                    }
+                }
                 return false;
             }
             return node.tag !== 'arch';
@@ -398,11 +442,6 @@ return core.Class.extend({
      */
     _processFieldsView: function (viewInfo) {
         var viewFields = this._processFields(viewInfo.type, viewInfo.arch, viewInfo.fields);
-        // by default fetch display_name and id
-        if (!viewInfo.fields.display_name) {
-            viewInfo.fields.display_name = {type: 'char'};
-            viewFields.display_name = {};
-        }
         viewInfo.fieldsInfo = {};
         viewInfo.fieldsInfo[viewInfo.type] = viewFields;
         utils.deepFreeze(viewInfo.fields);

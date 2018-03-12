@@ -3,7 +3,6 @@
 
 from datetime import timedelta
 
-from odoo.tools import pycompat
 from odoo import api, fields, models, _
 from odoo.tools.safe_eval import safe_eval
 
@@ -18,7 +17,7 @@ class ProjectTaskType(models.Model):
         domain=[('model', '=', 'project.task')],
         help="If set and if the project's rating configuration is 'Rating when changing stage', then an email will be sent to the customer when the task reaches this step.")
     auto_validation_kanban_state = fields.Boolean('Automatic kanban status', default=False,
-        help="Automatically modify the kanban state when the customer replies to the feedback for this stage.\n"
+        help="Automatically modify the kanban state when the customer replies to the feedback request for this stage.\n"
             " * A good feedback from the customer will update the kanban state to 'ready for the new stage' (green bullet).\n"
             " * A medium or a bad feedback will set the kanban state to 'blocked' (red bullet).\n")
 
@@ -73,13 +72,13 @@ class Project(models.Model):
         domain = [('create_date', '>=', fields.Datetime.to_string(fields.datetime.now() - timedelta(days=30)))]
         for project in self:
             activity = project.tasks.rating_get_grades(domain)
-            project.percentage_satisfaction_project = activity['great'] * 100 / sum(pycompat.values(activity)) if sum(pycompat.values(activity)) else -1
+            project.percentage_satisfaction_project = activity['great'] * 100 / sum(activity.values()) if sum(activity.values()) else -1
 
     @api.one
     @api.depends('tasks.rating_ids.rating')
     def _compute_percentage_satisfaction_task(self):
         activity = self.tasks.rating_get_grades()
-        self.percentage_satisfaction_task = activity['great'] * 100 / sum(pycompat.values(activity)) if sum(pycompat.values(activity)) else -1
+        self.percentage_satisfaction_task = activity['great'] * 100 / sum(activity.values()) if sum(activity.values()) else -1
 
     percentage_satisfaction_task = fields.Integer(
         compute='_compute_percentage_satisfaction_task', string="Happy % on Task", store=True, default=-1)
@@ -108,6 +107,5 @@ class Project(models.Model):
         action['name'] = _('Ratings of %s') % (self.name,)
         action_context = safe_eval(action['context']) if action['context'] else {}
         action_context.update(self._context)
-        if self.use_tasks:
-            action_context['search_default_rating_tasks'] = 1
+        action_context['search_default_rating_tasks'] = 1
         return dict(action, context=action_context)

@@ -36,7 +36,7 @@
                                     <li class="dropdown" t-ignore="true" t-if="not user_id._is_public()">
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                                             <b>
-                                                <span t-esc="(len(user_id.name)&gt;25) and (user_id.name[:23]+'...') or user_id.name"/>
+                                                <span t-esc="user_id.name[:23] + '...' if user_id.name and len(user_id.name) &gt; 25 else user_id.name"/>
                                                 <span class="caret"></span>
                                             </b>
                                         </a>
@@ -74,7 +74,7 @@
                     </div>
                 </div>
             </div>
-            <div id="wrap" class='portal-wrap'>
+            <div id="wrap" class='o_portal_wrap'>
                 <div class="container mb64">
                     <t t-if="my_details">
                         <div class="row">
@@ -117,7 +117,7 @@
     <template id="portal_my_home" name="My Portal">
         <t t-call="portal.portal_layout">
             <t t-set="my_details" t-value="True"/>
-            <div class="o_my_home_content">
+            <div class="o_portal_my_home">
                 <div class="oe_structure"></div>
                 <h3 class="page-header">Your Documents</h3>
                 <ul class="o_portal_docs list-group">
@@ -159,7 +159,7 @@
                             </li>
                         </ul>
                     </div>
-                    <input type="text" class="form-control search_panel_fixed_width" t-att-value='search' name="search"/>
+                    <input type="text" class="form-control o_portal_search_panel_fixed_width" t-att-value='search' name="search"/>
                     <span class="input-group-btn">
                         <button class="btn btn-default search-submit" type="button"><span class="fa fa-search"></span></button>
                     </span>
@@ -167,7 +167,7 @@
             </div>
         </t>
         <div t-if="searchbar_sortings" class="dropdown pull-right mr4">
-            <button id="portal_searchbar_sortby" class="search_panel_fixed_width btn btn-default" type="button" data-toggle="dropdown">
+            <button id="portal_searchbar_sortby" class="o_portal_search_panel_fixed_width btn btn-default" type="button" data-toggle="dropdown">
                 <span class="fa fa-sort fa-lg" />
                 <span class='hidden-xs hidden-sm hidden-md' t-esc="searchbar_sortings[sortby].get('label', 'Newest')"/>
                 <span class="caret"></span>
@@ -181,7 +181,7 @@
             </ul>
         </div>
         <div t-if="searchbar_filters" class="dropdown pull-right mr4">
-            <button id="portal_searchbar_filters" class="search_panel_fixed_width btn btn-default" type="button" data-toggle="dropdown">
+            <button id="portal_searchbar_filters" class="o_portal_search_panel_fixed_width btn btn-default" type="button" data-toggle="dropdown">
                 <span class="fa fa-filter fa-lg" />
                 <span class='hidden-xs hidden-sm hidden-md' t-esc="searchbar_filters[filterby].get('label', 'All')"/>
                 <span class="caret"></span>
@@ -252,7 +252,8 @@
                             <div class="clearfix" />
                             <div t-attf-class="form-group #{error.get('company_name') and 'has-error' or ''} col-lg-6">
                                 <label class="control-label label-optional" for="company_name">Company Name</label>
-                                <input type="text" name="company_name" class="form-control" t-att-value="company_name or partner.company_name"/>
+                                <p t-if="partner.commercial_partner_id.is_company" class="form-control" t-esc="partner.commercial_company_name"/>
+                                <input t-else="" type="text" name="company_name" class="form-control" t-att-value="company_name or partner.company_name"/>
                             </div>
                             <div t-if="has_check_vat" t-attf-class="form-group #{error.get('vat') and 'has-error' or ''} col-lg-6">
                                 <label class="control-label label-optional" for="vat">VAT Number</label>
@@ -261,7 +262,7 @@
 
                             <div class="clearfix" />
                             <div t-attf-class="form-group #{error.get('street') and 'has-error' or ''} col-lg-6">
-                                <label class="control-label label-optional" for="street">Street</label>
+                                <label class="control-label" for="street">Street</label>
                                 <input type="text" name="street" class="form-control" t-att-value="street or partner.street"/>
                             </div>
                             <div t-attf-class="form-group #{error.get('city') and 'has-error' or ''} col-lg-6">
@@ -335,5 +336,40 @@
         <xpath expr="//li[@id='o_logout']" position="before">
             <li><a href="/my/home" role="menuitem">My Account</a></li>
         </xpath>
+    </template>
+
+    <!--
+        Generic chatter template for the frontend
+        This template provide the container of the chatter. The rest is done in js.
+        To use this template, you need to call it after setting the following variable in your template or in your controller:
+            :object browserecord : the mail_thread object
+            :message_per_page int (optional): number of message per chatter page
+            :token string (optional): if you want your chatter to be available for non-logged user,
+                     you can use a token to verify the identity of the user;
+                     the message will be posted with the identity of the partner_id of the object
+    -->
+    <template id="message_thread">
+        <div id="discussion" class="hidden-print o_portal_chatter"
+            t-att-data-token="token" t-att-data-res_model="object._name" t-att-data-res_id="object.id" t-att-data-pager_step="message_per_page or 10" t-att-data-allow_composer="'0' if disable_composer else '1'">
+        </div>
+    </template>
+
+    <!--
+        Container signature template for frontend
+        :partner-name string: customer name that signs
+        :res-model string: model of the signed document
+        :res-id stringied int: id of the signed document
+        :call-url string: url to call once clicking on the sign button
+        :access-token string: access token for customer portal
+    -->
+
+    <template id="portal_signature" name="Ask Signature">
+        <div t-att-class="'o_portal_signature_form'"
+            t-att-data-partner-name="partner_name"
+            t-att-data-res-model="object._name"
+            t-att-data-res-id="object.id"
+            t-att-data-call-url="callUrl"
+            t-att-data-sign-label="signLabel"
+            t-att-data-access-token="accessToken"/>
     </template>
 </odoo>

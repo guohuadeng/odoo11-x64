@@ -2,8 +2,9 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import logging
-import os
 import traceback
+import os
+import unittest
 
 import werkzeug
 import werkzeug.routing
@@ -16,11 +17,26 @@ from odoo.http import request
 from odoo.tools import config
 from odoo.exceptions import QWebException
 from odoo.tools.safe_eval import safe_eval
+from odoo.osv.expression import FALSE_DOMAIN
 
-from odoo.addons.http_routing.models.ir_http import ModelConverter
-
+from odoo.addons.http_routing.models.ir_http import ModelConverter, _guess_mimetype
 
 logger = logging.getLogger(__name__)
+
+
+def sitemap_qs2dom(qs, route, field='name'):
+    """ Convert a query_string (can contains a path) to a domain"""
+    dom = []
+    if qs and qs.lower() not in route:
+        needles = qs.strip('/').split('/')
+        # needles will be altered and keep only element which one is not in route
+        # diff(from=['shop', 'product'], to=['shop', 'product', 'product']) => to=['product']
+        unittest.util.unorderable_list_difference(route.strip('/').split('/'), needles)
+        if len(needles) == 1:
+            dom = [(field, 'ilike', needles[0])]
+        else:
+            dom = FALSE_DOMAIN
+    return dom
 
 
 class Http(models.AbstractModel):
@@ -34,7 +50,6 @@ class Http(models.AbstractModel):
         return dict(
             super(Http, cls)._get_converters(),
             model=ModelConverter,
-            page=PageConverter,
         )
 
     @classmethod
@@ -47,28 +62,27 @@ class Http(models.AbstractModel):
         if not request.session.uid:
             env = api.Environment(request.cr, SUPERUSER_ID, request.context)
             website = env['website'].get_current_website()
-            if website:
+            if website and website.user_id:
                 request.uid = website.user_id.id
         if not request.uid:
             super(Http, cls)._auth_method_public()
 
     @classmethod
-    def get_page_key(cls):
-        return (cls._name, "cache", request.uid, request.lang, request.httprequest.full_path)
-
-    @classmethod
     def _add_dispatch_parameters(cls, func):
-        if request.is_frontend:
-            context = dict(request.context)
-            if not context.get('tz'):
-                context['tz'] = request.session.get('geoip', {}).get('time_zone')
 
-            request.website = request.env['website'].get_current_website()  # can use `request.env` since auth methods are called
-            context['website_id'] = request.website.id
+        context = dict(request.context)
+        if not context.get('tz'):
+            context['tz'] = request.session.get('geoip', {}).get('time_zone')
+
+        request.website = request.env['website'].get_current_website()  # can use `request.env` since auth methods are called
+        context['website_id'] = request.website.id
+
+        # bind modified context
+        request.context = context
 
         super(Http, cls)._add_dispatch_parameters(func)
 
-        if request.is_frontend and request.routing_iteration == 1:
+        if request.routing_iteration == 1:
             request.website = request.website.with_context(request.context)
 
     @classmethod
@@ -79,7 +93,7 @@ class Http(models.AbstractModel):
 
     @classmethod
     def _get_language_codes(cls):
-        if request.website:
+        if getattr(request, 'website', False):
             return request.website._get_languages()
         return super(Http, cls)._get_language_codes()
 
@@ -90,7 +104,54 @@ class Http(models.AbstractModel):
         return super(Http, cls)._get_default_lang()
 
     @classmethod
-    def _handle_exception(cls, exception, code=500):
+    def _serve_page(cls):
+        req_page = request.httprequest.path
+
+        domain = [('url', '=', req_page), '|', ('website_ids', 'in', request.website.id), ('website_ids', '=', False)]
+        pages = request.env['website.page'].search(domain)
+
+        if not request.website.is_publisher():
+            pages = pages.filtered('is_visible')
+
+        mypage = pages[0] if pages else False
+        _, ext = os.path.splitext(req_page)
+        if mypage:
+            return request.render(mypage.view_id.id, {
+                # 'path': req_page[1:],
+                'deletable': True,
+                'main_object': mypage,
+            }, mimetype=_guess_mimetype(ext))
+        return False
+
+    @classmethod
+    def _serve_redirect(cls):
+        req_page = request.httprequest.path
+        domain = [
+            '|', ('website_id', '=', request.website.id), ('website_id', '=', False),
+            ('url_from', '=', req_page)
+        ]
+        return request.env['website.redirect'].search(domain, limit=1)
+
+    @classmethod
+    def _serve_fallback(cls, exception):
+        # serve attachment before
+        parent = super(Http, cls)._serve_fallback(exception)
+        if parent:  # attachment
+            return parent
+
+        website_page = cls._serve_page()
+        if website_page:
+            return website_page
+
+        redirect = cls._serve_redirect()
+        if redirect:
+            return request.redirect(redirect.url_to, code=redirect.type)
+
+        return False
+
+    @classmethod
+    def _handle_exception(cls, exception):
+        code = 500  # default code
         is_website_request = bool(getattr(request, 'is_frontend', False) and getattr(request, 'website', False))
         if not is_website_request:
             # Don't touch non website requests exception handling
@@ -98,6 +159,7 @@ class Http(models.AbstractModel):
         else:
             try:
                 response = super(Http, cls)._handle_exception(exception)
+
                 if isinstance(response, Exception):
                     exception = response
                 else:
@@ -134,7 +196,7 @@ class Http(models.AbstractModel):
                 if 'qweb_exception' in values:
                     view = request.env["ir.ui.view"]
                     views = view._views_get(exception.qweb['template'])
-                    to_reset = views.filtered(lambda view: view.model_data_id.noupdate is True and not view.page)
+                    to_reset = views.filtered(lambda view: view.model_data_id.noupdate is True and view.arch_fs)
                     values['views'] = to_reset
             elif code == 403:
                 logger.warn("403 Forbidden:\n\n%s", values['traceback'])
@@ -144,17 +206,25 @@ class Http(models.AbstractModel):
                 status_code=code,
             )
 
+            view_id = code
+            if request.website.is_publisher() and isinstance(exception, werkzeug.exceptions.NotFound):
+                view_id = 'page_404'
+                values['path'] = request.httprequest.path[1:]
+
             if not request.uid:
                 cls._auth_method_public()
 
             try:
-                html = request.env['ir.ui.view'].render_template('website.%s' % code, values)
+                html = request.env['ir.ui.view'].render_template('website.%s' % view_id, values)
             except Exception:
                 html = request.env['ir.ui.view'].render_template('website.http_error', values)
             return werkzeug.wrappers.Response(html, status=code, content_type='text/html;charset=utf-8')
 
     @classmethod
-    def binary_content(cls, xmlid=None, model='ir.attachment', id=None, field='datas', unique=False, filename=None, filename_field='datas_fname', download=False, mimetype=None, default_mimetype='application/octet-stream', env=None):
+    def binary_content(cls, xmlid=None, model='ir.attachment', id=None, field='datas',
+                       unique=False, filename=None, filename_field='datas_fname', download=False,
+                       mimetype=None, default_mimetype='application/octet-stream',
+                       access_token=None, env=None):
         env = env or request.env
         obj = None
         if xmlid:
@@ -164,43 +234,19 @@ class Http(models.AbstractModel):
         if obj and 'website_published' in obj._fields:
             if env[obj._name].sudo().search([('id', '=', obj.id), ('website_published', '=', True)]):
                 env = env(user=SUPERUSER_ID)
-        return super(Http, cls).binary_content(xmlid=xmlid, model=model, id=id, field=field, unique=unique, filename=filename, filename_field=filename_field, download=download, mimetype=mimetype, default_mimetype=default_mimetype, env=env)
+        return super(Http, cls).binary_content(
+            xmlid=xmlid, model=model, id=id, field=field, unique=unique, filename=filename,
+            filename_field=filename_field, download=download, mimetype=mimetype,
+            default_mimetype=default_mimetype, access_token=access_token, env=env)
 
 
 class ModelConverter(ModelConverter):
 
-    def generate(self, uid, query=None, args=None):
+    def generate(self, uid, dom=None, args=None):
         Model = request.env[self.model].sudo(uid)
         domain = safe_eval(self.domain, (args or {}).copy())
-        if query:
-            domain.append((Model._rec_name, 'ilike', '%' + query + '%'))
+        if dom:
+            domain += dom
         for record in Model.search_read(domain=domain, fields=['write_date', Model._rec_name]):
             if record.get(Model._rec_name, False):
                 yield {'loc': (record['id'], record[Model._rec_name])}
-
-
-class PageConverter(werkzeug.routing.PathConverter):
-    """ Only point of this converter is to bundle pages enumeration logic """
-
-    def generate(self, uid, query=None, args={}):
-        View = request.env['ir.ui.view'].sudo(uid)
-        domain = [('page', '=', True)]
-        query = query and query.startswith('website.') and query[8:] or query
-        if query:
-            domain += [('key', 'like', query)]
-        website = request.env['website'].get_current_website()
-        domain += ['|', ('website_id', '=', website.id), ('website_id', '=', False)]
-
-        views = View.search_read(domain, fields=['key', 'priority', 'write_date'], order='name')
-        for view in views:
-            xid = view['key'].startswith('website.') and view['key'][8:] or view['key']
-            # the 'page/homepage' url is indexed as '/', avoid aving the same page referenced twice
-            # when we will have an url mapping mechanism, replace this by a rule: page/homepage --> /
-            if xid == 'homepage':
-                continue
-            record = {'loc': xid}
-            if view['priority'] != 16:
-                record['__priority'] = min(round(view['priority'] / 32.0, 1), 1)
-            if view['write_date']:
-                record['__lastmod'] = view['write_date'][:10]
-            yield record

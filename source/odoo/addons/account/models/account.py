@@ -5,7 +5,7 @@ import math
 
 from odoo.osv import expression
 from odoo.tools.float_utils import float_round as round
-from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT, pycompat
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.exceptions import UserError, ValidationError
 from odoo import api, fields, models, _
 
@@ -35,6 +35,7 @@ class AccountAccountTag(models.Model):
     name = fields.Char(required=True)
     applicability = fields.Selection([('accounts', 'Accounts'), ('taxes', 'Taxes')], required=True, default='accounts')
     color = fields.Integer('Color Index', default=10)
+    active = fields.Boolean(default=True, help="Set active to false to hide the Account Tag without removing it.")
 
 #----------------------------------------------------------
 # Accounts
@@ -51,7 +52,7 @@ class AccountAccount(models.Model):
     def _check_reconcile(self):
         for account in self:
             if account.internal_type in ('receivable', 'payable') and account.reconcile == False:
-                raise ValidationError(_('You cannot have a receivable/payable account that is not reconciliable. (account code: %s)') % account.code)
+                raise ValidationError(_('You cannot have a receivable/payable account that is not reconcilable. (account code: %s)') % account.code)
 
     name = fields.Char(required=True, index=True)
     currency_id = fields.Many2one('res.currency', string='Account Currency',
@@ -76,9 +77,74 @@ class AccountAccount(models.Model):
     tag_ids = fields.Many2many('account.account.tag', 'account_account_account_tag', string='Tags', help="Optional tags you may want to assign for custom reporting")
     group_id = fields.Many2one('account.group')
 
+    opening_debit = fields.Monetary(string="Opening debit", compute='_compute_opening_debit_credit', inverse='_set_opening_debit', help="Opening debit value for this account.")
+    opening_credit = fields.Monetary(string="Opening credit", compute='_compute_opening_debit_credit', inverse='_set_opening_credit', help="Opening credit value for this account.")
+
     _sql_constraints = [
         ('code_company_uniq', 'unique (code,company_id)', 'The code of the account must be unique per company !')
     ]
+
+    def _compute_opening_debit_credit(self):
+        for record in self:
+            opening_debit = opening_credit = 0.0
+            if record.company_id.account_opening_move_id:
+                for line in self.env['account.move.line'].search([('account_id', '=', record.id),
+                                                                 ('move_id','=', record.company_id.account_opening_move_id.id)]):
+                    #could be executed at most twice: once for credit, once for debit
+                    if line.debit:
+                        opening_debit = line.debit
+                    elif line.credit:
+                        opening_credit = line.credit
+            record.opening_debit = opening_debit
+            record.opening_credit = opening_credit
+
+    def _set_opening_debit(self):
+        self._set_opening_debit_credit(self.opening_debit, 'debit')
+
+    def _set_opening_credit(self):
+        self._set_opening_debit_credit(self.opening_credit, 'credit')
+
+    def _set_opening_debit_credit(self, amount, field):
+        """ Generic function called by both opening_debit and opening_credit's
+        inverse function. 'Amount' parameter is the value to be set, and field
+        either 'debit' or 'credit', depending on wich one of these two fields
+        got assigned.
+        """
+        opening_move = self.company_id.account_opening_move_id
+
+        if not opening_move:
+            raise UserError(_("No opening move defined !"))
+
+        if opening_move.state == 'draft':
+            # check whether we should create a new move line or modify an existing one
+            opening_move_line = self.env['account.move.line'].search([('account_id', '=', self.id),
+                                                                      ('move_id','=', opening_move.id),
+                                                                      (field,'!=', False),
+                                                                      (field,'!=', 0.0)]) # 0.0 condition important for import
+
+            counter_part_map = {'debit': opening_move_line.credit, 'credit': opening_move_line.debit}
+            # No typo here! We want the credit value when treating debit and debit value when treating credit
+
+            if opening_move_line:
+                if amount:
+                    # modify the line
+                    setattr(opening_move_line.with_context({'check_move_validity': False}), field, amount)
+                elif counter_part_map[field]:
+                    # delete the line (no need to keep a line with value = 0)
+                    opening_move_line.with_context({'check_move_validity': False}).unlink()
+            elif amount:
+                # create a new line, as none existed before
+                self.env['account.move.line'].with_context({'check_move_validity': False}).create({
+                        'name': _('Opening balance'),
+                        field: amount,
+                        'move_id': opening_move.id,
+                        'account_id': self.id,
+                })
+
+            # Then, we automatically balance the opening move, to make sure it stays valid
+            if not 'import_file' in self.env.context:
+                # When importing a file, avoid recomputing the opening move for each account and do it at the end, for better performances
+                self.company_id._auto_balance_opening_move()
 
     @api.model
     def default_get(self, default_fields):
@@ -145,6 +211,20 @@ class AccountAccount(models.Model):
         default.setdefault('code', _("%s (copy)") % (self.code or ''))
         return super(AccountAccount, self).copy(default)
 
+    @api.model
+    def load(self, fields, data):
+        """ Overridden for better performances when importing a list of account
+        with opening debit/credit. In that case, the auto-balance is postpone
+        untill the whole file has been imported.
+        """
+        rslt = super(AccountAccount, self).load(fields, data)
+
+        if 'import_file' in self.env.context:
+            companies = self.search([('id', 'in', rslt['ids'])]).mapped('company_id')
+            for company in companies:
+                company._auto_balance_opening_move()
+        return rslt
+
     @api.multi
     def write(self, vals):
         # Dont allow changing the company_id when account_move_line already exist
@@ -186,7 +266,7 @@ class AccountAccount(models.Model):
         elif self.internal_type == 'receivable':
             action_context = {'show_mode_selector': False, 'mode': 'customers'}
         else:
-            action_context = {'show_mode_selector': False, 'account_ids': [self.id,]}
+            action_context = {'show_mode_selector': False, 'mode': 'accounts', 'account_ids': [self.id,]}
         return {
             'type': 'ir.actions.client',
             'tag': 'manual_reconciliation_view',
@@ -236,6 +316,7 @@ class AccountJournal(models.Model):
 
     name = fields.Char(string='Journal Name', required=True)
     code = fields.Char(string='Short Code', size=5, required=True, help="The journal entries of this journal will be named using this prefix.")
+    active = fields.Boolean(default=True, help="Set active to false to hide the Journal without removing it.")
     type = fields.Selection([
             ('sale', 'Sale'),
             ('purchase', 'Purchase'),
@@ -283,7 +364,7 @@ class AccountJournal(models.Model):
         domain=[('payment_type', '=', 'inbound')], string='Debit Methods', default=lambda self: self._default_inbound_payment_methods(),
         help="Manual: Get paid by cash, check or any other method outside of Odoo.\n"\
              "Electronic: Get paid automatically through a payment acquirer by requesting a transaction on a card saved by the customer when buying or subscribing online (payment token).\n"\
-             "Batch Deposit: Encash several customer checks at once by generating a batch deposit to submit to your bank. When encoding the bank statement in Odoo,you are suggested to reconcile the transaction with the batch deposit. Enable this option from the settings.")
+             "Batch Deposit: Encase several customer checks at once by generating a batch deposit to submit to your bank. When encoding the bank statement in Odoo,you are suggested to reconcile the transaction with the batch deposit. Enable this option from the settings.")
     outbound_payment_method_ids = fields.Many2many('account.payment.method', 'account_journal_outbound_payment_method_rel', 'journal_id', 'outbound_payment_method',
         domain=[('payment_type', '=', 'outbound')], string='Payment Methods', default=lambda self: self._default_outbound_payment_methods(),
         help="Manual:Pay bill by cash or any other method outside of Odoo.\n"\
@@ -297,12 +378,11 @@ class AccountJournal(models.Model):
     belongs_to_company = fields.Boolean('Belong to the user\'s current company', compute="_belong_to_company", search="_search_company_journals",)
 
     # Bank journals fields
-    bank_account_id = fields.Many2one('res.partner.bank', string="Bank Account", ondelete='restrict', copy=False, domain="[('partner_id','=', company_id)]")
+    bank_account_id = fields.Many2one('res.partner.bank', string="Bank Account", ondelete='restrict', copy=False)
     bank_statements_source = fields.Selection([('undefined', 'Undefined Yet'),('manual', 'Record Manually')], string='Bank Feeds', default='undefined')
     bank_acc_number = fields.Char(related='bank_account_id.acc_number')
     bank_id = fields.Many2one('res.bank', related='bank_account_id.bank_id')
 
-    color = fields.Integer("Color Index", default=1)
     _sql_constraints = [
         ('code_company_uniq', 'unique (code, name, company_id)', 'The code and name of the journal must be unique per company !'),
     ]
@@ -329,7 +409,7 @@ class AccountJournal(models.Model):
         for journal in self:
             if journal.sequence_id and journal.sequence_number_next:
                 sequence = journal.sequence_id._get_current_sequence()
-                sequence.number_next = journal.sequence_number_next
+                sequence.sudo().number_next = journal.sequence_number_next
 
     @api.multi
     # do not depend on 'refund_sequence_id.date_range_ids', because
@@ -408,9 +488,16 @@ class AccountJournal(models.Model):
     @api.multi
     def write(self, vals):
         for journal in self:
+            company = journal.company_id
             if ('company_id' in vals and journal.company_id.id != vals['company_id']):
                 if self.env['account.move'].search([('journal_id', 'in', self.ids)], limit=1):
                     raise UserError(_('This journal already contains items, therefore you cannot modify its company.'))
+                company = self.env['res.company'].browse(vals['company_id'])
+                if self.bank_account_id.company_id and self.bank_account_id.company_id != company:
+                    self.bank_account_id.write({
+                        'company_id': company.id,
+                        'partner_id': company.partner_id.id,
+                    })
             if ('code' in vals and journal.code != vals['code']):
                 if self.env['account.move'].search([('journal_id', 'in', self.ids)], limit=1):
                     raise UserError(_('This journal already contains items, therefore you cannot modify its short name.'))
@@ -424,8 +511,16 @@ class AccountJournal(models.Model):
                     self.default_debit_account_id.currency_id = vals['currency_id']
                 if not 'default_credit_account_id' in vals and self.default_credit_account_id:
                     self.default_credit_account_id.currency_id = vals['currency_id']
-            if 'bank_account_id' in vals and not vals.get('bank_account_id'):
-                raise UserError(_('You cannot empty the bank account once set.'))
+                if self.bank_account_id:
+                    self.bank_account_id.currency_id = vals['currency_id']
+            if 'bank_account_id' in vals:
+                if not vals.get('bank_account_id'):
+                    raise UserError(_('You cannot empty the bank account once set.'))
+                else:
+                    bank_account = self.env['res.partner.bank'].browse(vals['bank_account_id'])
+                    if bank_account.partner_id != company.partner_id:
+                        raise UserError(_("The partners of the journal's company and the related bank account mismatch."))
+
         result = super(AccountJournal, self).write(vals)
 
         # Create the bank_account_id if necessary
@@ -604,6 +699,15 @@ class AccountJournal(models.Model):
             journal.at_least_one_inbound = bool(len(journal.inbound_payment_method_ids))
             journal.at_least_one_outbound = bool(len(journal.outbound_payment_method_ids))
 
+    def setup_save_journal_and_create_more(self):
+        """ This function is triggered by the button allowing to create more
+        bank accounts, displayed in the "Bank Accounts" wizard of the setup bar.
+
+        Button execution is done in Python, so that the model is validated and saved
+        before executing the action.
+        """
+        return self.env.ref('account.action_account_bank_journal_form').read()[0]
+
 
 class ResPartnerBank(models.Model):
     _inherit = "res.partner.bank"
@@ -632,7 +736,7 @@ class AccountTaxGroup(models.Model):
 class AccountTax(models.Model):
     _name = 'account.tax'
     _description = 'Tax'
-    _order = 'sequence'
+    _order = 'sequence,id'
 
     @api.model
     def _default_tax_group(self):
@@ -662,17 +766,20 @@ class AccountTax(models.Model):
     analytic = fields.Boolean(string="Include in Analytic Cost", help="If set, the amount computed by this tax will be assigned to the same analytic account as the invoice line (if any)")
     tag_ids = fields.Many2many('account.account.tag', 'account_tax_account_tag', string='Tags', help="Optional tags you may want to assign for custom reporting")
     tax_group_id = fields.Many2one('account.tax.group', string="Tax Group", default=_default_tax_group, required=True)
-    # Technical field to make the 'use_cash_basis' field invisible if the same named field is set to false in 'res.company' model
-    hide_use_cash_basis = fields.Boolean(string='Hide Use Cash Basis Option', related='company_id.use_cash_basis')
-    use_cash_basis = fields.Boolean(
-        'Use Cash Basis',
-        help="Select this if the tax should use cash basis,"
-        "which will create an entry for this tax on a given account during reconciliation")
+    # Technical field to make the 'tax_exigibility' field invisible if the same named field is set to false in 'res.company' model
+    hide_tax_exigibility = fields.Boolean(string='Hide Use Cash Basis Option', related='company_id.tax_exigibility')
+    tax_exigibility = fields.Selection(
+        [('on_invoice', 'Based on Invoice'),
+         ('on_payment', 'Based on Payment'),
+        ], string='Tax Due', default='on_invoice',
+        oldname='use_cash_basis',
+        help="Based on Invoice: the tax is due as soon as the invoice is validated.\n"
+        "Based on Payment: the tax is due as soon as the payment of the invoice is received.")
     cash_basis_account = fields.Many2one(
         'account.account',
         string='Tax Received Account',
         domain=[('deprecated', '=', False)],
-        help='Account use when creating entry for tax cash basis')
+        help='Account used as counterpart for the journal entry, for taxes eligible based on payments.')
 
     _sql_constraints = [
         ('name_company_uniq', 'unique(name, company_id, type_tax_use)', 'Tax names must be unique !'),
@@ -681,15 +788,13 @@ class AccountTax(models.Model):
     @api.multi
     def unlink(self):
         company_id = self.env.user.company_id.id
-        ir_values = self.env['ir.values']
-        supplier_taxes_id = set(ir_values.get_default('product.template', 'supplier_taxes_id', company_id=company_id) or [])
-        deleted_sup_tax = self.filtered(lambda tax: tax.id in supplier_taxes_id)
-        if deleted_sup_tax:
-            ir_values.sudo().set_default('product.template', "supplier_taxes_id", list(supplier_taxes_id - set(deleted_sup_tax.ids)), for_all_users=True, company_id=company_id)
-        taxes_id = set(self.env['ir.values'].get_default('product.template', 'taxes_id', company_id=company_id) or [])
-        deleted_tax = self.filtered(lambda tax: tax.id in taxes_id)
-        if deleted_tax:
-            ir_values.sudo().set_default('product.template', "taxes_id", list(taxes_id - set(deleted_tax.ids)), for_all_users=True, company_id=company_id)
+        IrDefault = self.env['ir.default']
+        taxes = self.browse(IrDefault.get('product.template', 'taxes_id', company_id=company_id) or [])
+        if self & taxes:
+            IrDefault.sudo().set('product.template', 'taxes_id', (taxes - self).ids, company_id=company_id)
+        taxes = self.browse(IrDefault.get('product.template', 'supplier_taxes_id', company_id=company_id) or [])
+        if self & taxes:
+            IrDefault.sudo().set('product.template', 'supplier_taxes_id', (taxes - self).ids, company_id=company_id)
         return super(AccountTax, self).unlink()
 
     @api.one
@@ -888,6 +993,7 @@ class AccountTax(models.Model):
                 'account_id': tax.account_id.id,
                 'refund_account_id': tax.refund_account_id.id,
                 'analytic': tax.analytic,
+                'price_include': tax.price_include,
             })
 
         return {
@@ -906,6 +1012,15 @@ class AccountTax(models.Model):
             return incl_tax.compute_all(price)['total_excluded']
         return price
 
+    @api.model
+    def _fix_tax_included_price_company(self, price, prod_taxes, line_taxes, company_id):
+        if company_id:
+            #To keep the same behavior as in _compute_tax_id
+            prod_taxes = prod_taxes.filtered(lambda tax: tax.company_id == company_id)
+            line_taxes = line_taxes.filtered(lambda tax: tax.company_id == company_id)
+        return self._fix_tax_included_price(price, prod_taxes, line_taxes)
+
+
 class AccountReconcileModel(models.Model):
     _name = "account.reconcile.model"
     _description = "Preset to create journal entries during a invoices and payments matching"
@@ -923,7 +1038,7 @@ class AccountReconcileModel(models.Model):
         ('percentage', 'Percentage of balance')
         ], required=True, default='percentage')
     amount = fields.Float(digits=0, required=True, default=100.0, help="Fixed amount will count as a debit if it is negative, as a credit if it is positive.")
-    tax_id = fields.Many2one('account.tax', string='Tax', ondelete='restrict', domain=[('type_tax_use', '=', 'purchase')])
+    tax_id = fields.Many2one('account.tax', string='Tax', ondelete='restrict')
     analytic_account_id = fields.Many2one('account.analytic.account', string='Analytic Account', ondelete='set null')
 
     second_account_id = fields.Many2one('account.account', string='Second Account', ondelete='cascade', domain=[('deprecated', '=', False)])

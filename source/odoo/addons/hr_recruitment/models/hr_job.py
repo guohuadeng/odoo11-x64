@@ -1,6 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 
 
 class Job(models.Model):
@@ -27,7 +27,7 @@ class Job(models.Model):
     alias_id = fields.Many2one(
         'mail.alias', "Alias", ondelete="restrict", required=True,
         help="Email alias for this job position. New emails will automatically create new applicants for this job position.")
-    color = fields.Integer("Color Index", default=1)
+    color = fields.Integer("Color Index")
 
     def _compute_document_ids(self):
         applicants = self.mapped('application_ids').filtered(lambda self: not self.emp_id)
@@ -86,3 +86,15 @@ class Job(models.Model):
     @api.multi
     def close_dialog(self):
         return {'type': 'ir.actions.act_window_close'}
+
+    @api.multi
+    def edit_dialog(self):
+        form_view = self.env.ref('hr.view_hr_job_form')
+        return {
+            'name': _('Job'),
+            'res_model': 'hr.job',
+            'res_id': self.id,
+            'views': [(form_view.id, 'form'),],
+            'type': 'ir.actions.act_window',
+            'target': 'inline'
+        }

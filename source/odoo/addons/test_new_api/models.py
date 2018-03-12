@@ -212,6 +212,13 @@ class MultiLine(models.Model):
     multi = fields.Many2one('test_new_api.multi', ondelete='cascade')
     name = fields.Char()
     partner = fields.Many2one('res.partner')
+    tags = fields.Many2many('test_new_api.multi.tag')
+
+
+class MultiTag(models.Model):
+    _name = 'test_new_api.multi.tag'
+
+    name = fields.Char()
 
 
 class Edition(models.Model):
@@ -287,7 +294,7 @@ class Foo(models.Model):
     _name = 'test_new_api.foo'
 
     name = fields.Char()
-    value1 = fields.Integer()
+    value1 = fields.Integer(change_default=True)
     value2 = fields.Integer()
 
 
@@ -312,6 +319,10 @@ class Related(models.Model):
     # related fields with a single field
     related_name = fields.Char(related='name')
     related_related_name = fields.Char(related='related_name')
+
+    message = fields.Many2one('test_new_api.message')
+    message_name = fields.Text(related="message.body", related_sudo=False, string='Message Body')
+    message_currency = fields.Many2one(related="message.author", string='Message Author')
 
 
 class ComputeInverse(models.Model):
@@ -356,7 +367,7 @@ class ComputeRecursive(models.Model):
     _name = 'test_new_api.recursive'
 
     name = fields.Char(required=True)
-    parent = fields.Many2one('test_new_api.recursive')
+    parent = fields.Many2one('test_new_api.recursive', ondelete='cascade')
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
     @api.depends('name', 'parent.display_name')

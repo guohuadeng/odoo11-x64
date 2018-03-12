@@ -179,7 +179,7 @@ var DataExport = Dialog.extend({
             var self = this;
             this.exports.create({
                 name: value,
-                resource: this.dataset.model,
+                resource: this.record.model,
                 export_fields: _.map(fields, function (field) {
                     return [0, 0, {name: field}];
                 }),
@@ -455,7 +455,7 @@ var DataExport = Dialog.extend({
             Dialog.alert(this, _t("Please select fields to export..."));
             return;
         }
-        exported_fields.unshift({name: 'id', label: 'External ID'});
+        exported_fields.unshift({name: 'id', label: _t('External ID')});
 
         var export_format = this.$export_format_inputs.filter(':checked').val();
 

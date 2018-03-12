@@ -25,6 +25,8 @@ class account_journal(models.Model):
     kanban_dashboard = fields.Text(compute='_kanban_dashboard')
     kanban_dashboard_graph = fields.Text(compute='_kanban_dashboard_graph')
     show_on_dashboard = fields.Boolean(string='Show journal on dashboard', help="Whether this journal should be displayed on the dashboard or not", default=True)
+    color = fields.Integer("Color Index", default=0)
+    account_setup_bank_data_done = fields.Boolean(string='Bank setup marked as done', related='company_id.account_setup_bank_data_done', help="Technical field used in the special view for the setup bar step.")
 
     def _graph_title_and_key(self):
         if self.type == 'sale':
@@ -166,16 +168,16 @@ class account_journal(models.Model):
                             FROM account_bank_statement_line AS line
                             LEFT JOIN account_bank_statement AS st
                             ON line.statement_id = st.id
-                            WHERE st.journal_id IN %s AND st.state = 'open'
+                            WHERE st.journal_id IN %s AND st.state = 'open' AND line.amount != 0.0
                             AND not exists (select 1 from account_move_line aml where aml.statement_line_id = line.id)
                         """, (tuple(self.ids),))
             number_to_reconcile = self.env.cr.fetchone()[0]
             # optimization to read sum of balance from account_move_line
             account_ids = tuple(ac for ac in [self.default_debit_account_id.id, self.default_credit_account_id.id] if ac)
             if account_ids:
-                amount_field = 'balance' if not self.currency_id else 'amount_currency'
-                query = """SELECT sum(%s) FROM account_move_line WHERE account_id in %%s;""" % (amount_field,)
-                self.env.cr.execute(query, (account_ids,))
+                amount_field = 'balance' if (not self.currency_id or self.currency_id == self.company_id.currency_id) else 'amount_currency'
+                query = """SELECT sum(%s) FROM account_move_line WHERE account_id in %%s AND date <= %%s;""" % (amount_field,)
+                self.env.cr.execute(query, (account_ids, fields.Date.today(),))
                 query_results = self.env.cr.dictfetchall()
                 if query_results and query_results[0].get('sum') != None:
                     account_sum = query_results[0].get('sum')
@@ -199,18 +201,19 @@ class account_journal(models.Model):
             (number_draft, sum_draft) = self._count_results_and_sum_amounts(query_results_drafts, currency)
             (number_late, sum_late) = self._count_results_and_sum_amounts(late_query_results, currency)
 
+        difference = currency.round(last_balance-account_sum) + 0.0
         return {
             'number_to_reconcile': number_to_reconcile,
-            'account_balance': formatLang(self.env, account_sum, currency_obj=self.currency_id or self.company_id.currency_id),
-            'last_balance': formatLang(self.env, last_balance, currency_obj=self.currency_id or self.company_id.currency_id),
-            'difference': (last_balance-account_sum) and formatLang(self.env, last_balance-account_sum, currency_obj=self.currency_id or self.company_id.currency_id) or False,
+            'account_balance': formatLang(self.env, currency.round(account_sum) + 0.0, currency_obj=currency),
+            'last_balance': formatLang(self.env, currency.round(last_balance) + 0.0, currency_obj=currency),
+            'difference': formatLang(self.env, difference, currency_obj=currency) if difference else False,
             'number_draft': number_draft,
             'number_waiting': number_waiting,
             'number_late': number_late,
-            'sum_draft': formatLang(self.env, sum_draft or 0.0, currency_obj=self.currency_id or self.company_id.currency_id),
-            'sum_waiting': formatLang(self.env, sum_waiting or 0.0, currency_obj=self.currency_id or self.company_id.currency_id),
-            'sum_late': formatLang(self.env, sum_late or 0.0, currency_obj=self.currency_id or self.company_id.currency_id),
-            'currency_id': self.currency_id and self.currency_id.id or self.company_id.currency_id.id,
+            'sum_draft': formatLang(self.env, currency.round(sum_draft) + 0.0, currency_obj=currency),
+            'sum_waiting': formatLang(self.env, currency.round(sum_waiting) + 0.0, currency_obj=currency),
+            'sum_late': formatLang(self.env, currency.round(sum_late) + 0.0, currency_obj=currency),
+            'currency_id': currency.id,
             'bank_statements_source': self.bank_statements_source,
             'title': title,
         }
@@ -343,14 +346,18 @@ class account_journal(models.Model):
         ctx.update({
             'journal_type': self.type,
             'default_journal_id': self.id,
-            'search_default_journal_id': self.id,
             'default_type': invoice_type,
             'type': invoice_type
         })
 
         [action] = self.env.ref('account.%s' % action_name).read()
+        if not self.env.context.get('use_domain'):
+            ctx['search_default_journal_id'] = self.id
         action['context'] = ctx
         action['domain'] = self._context.get('use_domain', [])
+        account_invoice_filter = self.env.ref('account.view_account_invoice_filter', False)
+        if action_name in ['action_invoice_tree1', 'action_invoice_tree2']:
+            action['search_view_id'] = account_invoice_filter and account_invoice_filter.id or False
         if action_name in ['action_bank_statement_tree', 'action_view_bank_statement_tree']:
             action['views'] = False
             action['view_id'] = False
@@ -411,3 +418,27 @@ class account_journal(models.Model):
             'context': "{'default_journal_id': " + str(self.id) + "}",
         })
         return action
+
+    #####################
+    # Setup Steps Stuff #
+    #####################
+    @api.model
+    def retrieve_account_dashboard_setup_bar(self):
+        """ Returns the data used by the setup bar on the Accounting app dashboard."""
+        company = self.env.user.company_id
+        return {
+            'show_setup_bar': not company.account_setup_bar_closed,
+            'company': company.account_setup_company_data_done,
+            'bank': company.account_setup_bank_data_done,
+            'fiscal_year': company.account_setup_fy_data_done,
+            'chart_of_accounts': company.account_setup_coa_done,
+            'initial_balance': company.opening_move_posted(),
+        }
+
+    def mark_bank_setup_as_done_action(self):
+        """ Marks the 'bank setup' step as done in the setup bar and in the company."""
+        self.company_id.account_setup_bank_data_done = True
+
+    def unmark_bank_setup_as_done_action(self):
+        """ Marks the 'bank setup' step as not done in the setup bar and in the company."""
+        self.company_id.account_setup_bank_data_done = False

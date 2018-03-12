@@ -136,7 +136,7 @@ class BlogPost(models.Model):
         default='{"background-image": "none", "background-color": "oe_black", "opacity": "0.2", "resize_class": ""}')
     blog_id = fields.Many2one('blog.blog', 'Blog', required=True, ondelete='cascade')
     tag_ids = fields.Many2many('blog.tag', string='Tags')
-    content = fields.Html('Content', default=_default_content, translate=html_translate, sanitize_attributes=False)
+    content = fields.Html('Content', default=_default_content, translate=html_translate, sanitize=False)
     teaser = fields.Text('Teaser', compute='_compute_teaser', inverse='_set_teaser')
     teaser_manual = fields.Text(string='Teaser Content')
 
@@ -151,7 +151,7 @@ class BlogPost(models.Model):
     write_date = fields.Datetime('Last Modified on', index=True, readonly=True)
     write_uid = fields.Many2one('res.users', 'Last Contributor', index=True, readonly=True)
     author_avatar = fields.Binary(related='author_id.image_small', string="Avatar")
-    visits = fields.Integer('No of Views')
+    visits = fields.Integer('No of Views', copy=False)
     ranking = fields.Float(compute='_compute_ranking', string='Ranking')
 
     @api.multi
@@ -207,11 +207,12 @@ class BlogPost(models.Model):
 
     @api.multi
     def write(self, vals):
-        self.ensure_one()
-        if 'website_published' in vals and 'published_date' not in vals:
-            if (self.published_date or '') <= fields.Datetime.now():
-                vals['published_date'] = vals['website_published'] and fields.Datetime.now()
-        result = super(BlogPost, self).write(vals)
+        result = True
+        for post in self:
+            copy_vals = dict(vals)
+            if 'website_published' in vals and 'published_date' not in vals and (post.published_date or '') <= fields.Datetime.now():
+                copy_vals['published_date'] = vals['website_published'] and fields.Datetime.now() or False
+            result &= super(BlogPost, self).write(copy_vals)
         self._check_for_publication(vals)
         return result
 
@@ -227,6 +228,7 @@ class BlogPost(models.Model):
             'type': 'ir.actions.act_url',
             'url': self.url,
             'target': 'self',
+            'target_type': 'public',
             'res_id': self.id,
         }
 

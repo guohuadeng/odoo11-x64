@@ -349,6 +349,12 @@
             <field name="rate">10228.19</field>
         </record>
 
+        <record forcecreate="0" id="rateBYN" model="res.currency.rate">
+            <field name="currency_id" ref="BYN" />
+            <field name="name">2016-07-01</field>
+            <field name="rate">2.23151</field>
+        </record>
+
         <record forcecreate="0" id="rateBZD" model="res.currency.rate">
             <field name="currency_id" ref="BZD" />
             <field name="name">2010-01-01</field>
@@ -761,12 +767,6 @@
             <field name="currency_id" ref="YER" />
             <field name="name">2010-01-01</field>
             <field name="rate">264.784483</field>
-        </record>
-
-        <record forcecreate="0" id="rateVUB" model="res.currency.rate">
-            <field name="currency_id" ref="VUB" />
-            <field name="name">2010-01-01</field>
-            <field name="rate">5.3821</field>
         </record>
 
         <record forcecreate="0" id="rateEUR" model="res.currency.rate">

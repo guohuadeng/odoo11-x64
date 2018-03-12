@@ -10,7 +10,7 @@ from psycopg2 import IntegrityError
 
 from odoo import http
 from odoo.http import request
-from odoo.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT, pycompat
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools.translate import _
 from odoo.exceptions import ValidationError
 from odoo.addons.base.ir.ir_qweb.fields import nl2br
@@ -118,7 +118,7 @@ class WebsiteForm(http.Controller):
         error_fields = []
 
 
-        for field_name, field_value in pycompat.items(values):
+        for field_name, field_value in values.items():
             # If the value of the field if a file
             if hasattr(field_value, 'filename'):
                 # Undo file upload field name indexing
@@ -142,7 +142,7 @@ class WebsiteForm(http.Controller):
 
             # If it's a custom field
             elif field_name != 'context':
-                data['custom'] += "%s : %s\n" % (field_name.decode('utf-8'), field_value)
+                data['custom'] += u"%s : %s\n" % (field_name, field_value)
 
         # Add metadata if enabled
         environ = request.httprequest.headers.environ
@@ -164,14 +164,15 @@ class WebsiteForm(http.Controller):
         if hasattr(dest_model, "website_form_input_filter"):
             data['record'] = dest_model.website_form_input_filter(request, data['record'])
 
-        missing_required_fields = [label for label, field in pycompat.items(authorized_fields) if field['required'] and not label in data['record']]
+        missing_required_fields = [label for label, field in authorized_fields.items() if field['required'] and not label in data['record']]
         if any(error_fields):
             raise ValidationError(error_fields + missing_required_fields)
 
         return data
 
     def insert_record(self, request, model, values, custom, meta=None):
-        record = request.env[model.model].sudo().with_context(mail_create_nosubscribe=True).create(values)
+        model_name = model.sudo().model
+        record = request.env[model_name].sudo().with_context(mail_create_nosubscribe=True).create(values)
 
         if custom or meta:
             default_field = model.website_form_default_field_id
@@ -183,13 +184,13 @@ class WebsiteForm(http.Controller):
             # If there is a default field configured for this model, use it.
             # If there isn't, put the custom data in a message instead
             if default_field.name:
-                if default_field.ttype == 'html' or model.model == 'mail.mail':
+                if default_field.ttype == 'html' or model_name == 'mail.mail':
                     custom_content = nl2br(custom_content)
                 record.update({default_field.name: custom_content})
             else:
                 values = {
                     'body': nl2br(custom_content),
-                    'model': model.model,
+                    'model': model_name,
                     'message_type': 'comment',
                     'no_auto_thread': False,
                     'res_id': record.id,
@@ -201,7 +202,8 @@ class WebsiteForm(http.Controller):
     # Link all files attached on the form
     def insert_attachment(self, model, id_record, files):
         orphan_attachment_ids = []
-        record = model.env[model.model].browse(id_record)
+        model_name = model.sudo().model
+        record = model.env[model_name].browse(id_record)
         authorized_fields = model.sudo()._get_form_writable_fields()
         for file in files:
             custom_field = file.field_name not in authorized_fields
@@ -209,7 +211,7 @@ class WebsiteForm(http.Controller):
                 'name': file.field_name if custom_field else file.filename,
                 'datas': base64.encodestring(file.read()),
                 'datas_fname': file.filename,
-                'res_model': model.model,
+                'res_model': model_name,
                 'res_id': record.id,
             }
             attachment_id = request.env['ir.attachment'].sudo().create(attachment_value)
@@ -221,10 +223,10 @@ class WebsiteForm(http.Controller):
         # If some attachments didn't match a field on the model,
         # we create a mail.message to link them to the record
         if orphan_attachment_ids:
-            if model.model != 'mail.mail':
+            if model_name != 'mail.mail':
                 values = {
                     'body': _('<p>Attached files : </p>'),
-                    'model': model.model,
+                    'model': model_name,
                     'message_type': 'comment',
                     'no_auto_thread': False,
                     'res_id': id_record,

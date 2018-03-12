@@ -7,8 +7,6 @@ from odoo.exceptions import UserError
 
 import logging
 
-from odoo.tools import pycompat
-
 _logger = logging.getLogger(__name__)
 
 def migrate_set_tags_and_taxes_updatable(cr, registry, module):
@@ -42,9 +40,14 @@ def migrate_tags_on_taxes(cr, registry):
             ('type_tax_use', '=', tax_template.type_tax_use),
             ('description', '=', tax_template.description)
         ])
-        if len(tax_id.ids) == 1:
-            tax_id.sudo().write({'tag_ids': [(6, 0, tax_template.tag_ids.ids)]})
+        tax_id.sudo().write({'tag_ids': [(6, 0, tax_template.tag_ids.ids)]})
 
+def preserve_existing_tags_on_taxes(cr, registry, module):
+    ''' This is a utility function used to preserve existing previous tags during upgrade of the module.'''
+    env = api.Environment(cr, SUPERUSER_ID, {})
+    xml_records = env['ir.model.data'].search([('model', '=', 'account.account.tag'), ('module', 'like', module)])
+    if xml_records:
+        cr.execute("update ir_model_data set noupdate = 't' where id in %s", [tuple(xml_records.ids)])
 
 #  ---------------------------------------------------------------
 #   Account Templates: Account, Tax, Tax Code and chart. + Wizard
@@ -187,8 +190,8 @@ class AccountChartTemplate(models.Model):
                     default_account = acc_template_ref.get(self.expense_currency_exchange_account_id.id)
             return default_account
 
-        journals = [{'name': _('Customer Invoices'), 'type': 'sale', 'code': _('INV'), 'favorite': True, 'sequence': 5},
-                    {'name': _('Vendor Bills'), 'type': 'purchase', 'code': _('BILL'), 'favorite': True, 'sequence': 6},
+        journals = [{'name': _('Customer Invoices'), 'type': 'sale', 'code': _('INV'), 'favorite': True, 'color': 11, 'sequence': 5},
+                    {'name': _('Vendor Bills'), 'type': 'purchase', 'code': _('BILL'), 'favorite': True, 'color': 11, 'sequence': 6},
                     {'name': _('Miscellaneous Operations'), 'type': 'general', 'code': _('MISC'), 'favorite': False, 'sequence': 7},
                     {'name': _('Exchange Difference'), 'type': 'general', 'code': _('EXCH'), 'favorite': False, 'sequence': 9},
                     {'name': _('Cash Basis Tax Journal'), 'type': 'general', 'code': _('CABA'), 'favorite': False, 'sequence': 10}]
@@ -206,6 +209,7 @@ class AccountChartTemplate(models.Model):
                 'default_credit_account_id': _get_default_account(journal, 'credit'),
                 'default_debit_account_id': _get_default_account(journal, 'debit'),
                 'show_on_dashboard': journal['favorite'],
+                'color': journal.get('color', False),
                 'sequence': journal['sequence']
             }
             journal_data.append(vals)
@@ -286,7 +290,8 @@ class AccountChartTemplate(models.Model):
             tmp1, tmp2 = self.parent_id._install_template(company, code_digits=code_digits, transfer_account_id=transfer_account_id, acc_ref=acc_ref, taxes_ref=taxes_ref)
             acc_ref.update(tmp1)
             taxes_ref.update(tmp2)
-        tmp1, tmp2 = self._load_template(company, code_digits=code_digits, transfer_account_id=transfer_account_id, account_ref=acc_ref, taxes_ref=taxes_ref)
+        # Ensure, even if individually, that everything is translated according to the company's language.
+        tmp1, tmp2 = self.with_context(lang=company.partner_id.lang)._load_template(company, code_digits=code_digits, transfer_account_id=transfer_account_id, account_ref=acc_ref, taxes_ref=taxes_ref)
         acc_ref.update(tmp1)
         taxes_ref.update(tmp2)
         return acc_ref, taxes_ref
@@ -327,7 +332,7 @@ class AccountChartTemplate(models.Model):
 
         # writing account values after creation of accounts
         company.transfer_account_id = account_template_ref[transfer_account_id.id]
-        for key, value in pycompat.items(generated_tax_res['account_dict']):
+        for key, value in generated_tax_res['account_dict'].items():
             if value['refund_account_id'] or value['account_id'] or value['cash_basis_account']:
                 AccountTaxObj.browse(key).write({
                     'refund_account_id': account_ref.get(value['refund_account_id'], False),
@@ -352,7 +357,7 @@ class AccountChartTemplate(models.Model):
 
     @api.multi
     def create_record_with_xmlid(self, company, template, model, vals):
-        # Create a record for the given model with the given vals and 
+        # Create a record for the given model with the given vals and
         # also create an entry in ir_model_data to have an xmlid for the newly created record
         # xmlid is the concatenation of company_id and template_xml_id
         ir_model_data = self.env['ir.model.data']
@@ -377,6 +382,7 @@ class AccountChartTemplate(models.Model):
                 'tax_ids': [(6, 0, tax_ids)],
                 'company_id': company.id,
                 'tag_ids': [(6, 0, [t.id for t in account_template.tag_ids])],
+                'group_id': account_template.group_id.id,
             }
         return val
 
@@ -521,18 +527,21 @@ class AccountTaxTemplate(models.Model):
     analytic = fields.Boolean(string="Analytic Cost", help="If set, the amount computed by this tax will be assigned to the same analytic account as the invoice line (if any)")
     tag_ids = fields.Many2many('account.account.tag', string='Account tag', help="Optional tags you may want to assign for custom reporting")
     tax_group_id = fields.Many2one('account.tax.group', string="Tax Group")
-    use_cash_basis = fields.Boolean(
-        'Use Cash Basis',
-        help="Select this if the tax should use cash basis,"
-        "which will create an entry for this tax on a given account during reconciliation")
+    tax_exigibility = fields.Selection(
+        [('on_invoice', 'Based on Invoice'),
+         ('on_payment', 'Based on Payment'),
+        ], string='Tax Due', default='on_invoice',
+        oldname='use_cash_basis',
+        help="Based on Invoice: the tax is due as soon as the invoice is validated.\n"
+        "Based on Payment: the tax is due as soon as the payment of the invoice is received.")
     cash_basis_account = fields.Many2one(
         'account.account.template',
         string='Tax Received Account',
         domain=[('deprecated', '=', False)],
-        help='Account use when creating entry for tax cash basis')
+        help='Account used as counterpart for the journal entry, for taxes eligible based on payments.')
 
     _sql_constraints = [
-        ('name_company_uniq', 'unique(name, company_id, type_tax_use)', 'Tax names must be unique !'),
+        ('name_company_uniq', 'unique(name, company_id, type_tax_use, chart_template_id)', 'Tax names must be unique !'),
     ]
 
     @api.multi
@@ -568,7 +577,7 @@ class AccountTaxTemplate(models.Model):
             'tag_ids': [(6, 0, [t.id for t in self.tag_ids])],
             'children_tax_ids': [(6, 0, children_ids)],
             'tax_adjustment': self.tax_adjustment,
-            'use_cash_basis': self.use_cash_basis,
+            'tax_exigibility': self.tax_exigibility,
         }
 
         if self.tax_group_id:
@@ -598,10 +607,10 @@ class AccountTaxTemplate(models.Model):
                 'cash_basis_account': tax.cash_basis_account.id,
             }
 
-        if any([tax.use_cash_basis for tax in self]):
-            # When a CoA is being installed automatically and if it is creating account tax(es) whose field `Use Cash Basis`(use_cash_basis) is set to True by default
+        if any([tax.tax_exigibility == 'on_payment' for tax in self]):
+            # When a CoA is being installed automatically and if it is creating account tax(es) whose field `Use Cash Basis`(tax_exigibility) is set to True by default
             # (exapmple of such CoA's are l10n_fr and l10n_mx) then in the `Accounting Settings` the option `Cash Basis` should be checked by default.
-            company.use_cash_basis = True
+            company.tax_exigibility = True
 
         return {
             'tax_template_to_tax': tax_template_to_tax,
@@ -625,7 +634,7 @@ class AccountFiscalPositionTemplate(models.Model):
     country_id = fields.Many2one('res.country', string='Country',
         help="Apply only if delivery or invoicing country match.")
     country_group_id = fields.Many2one('res.country.group', string='Country Group',
-        help="Apply only if delivery or invocing country match the group.")
+        help="Apply only if delivery or invoicing country match the group.")
     state_ids = fields.Many2many('res.country.state', string='Federal States')
     zip_from = fields.Integer(string='Zip Range From', default=0)
     zip_to = fields.Integer(string='Zip Range To', default=0)
@@ -848,6 +857,8 @@ class WizardMultiChartsAccounts(models.TransientModel):
         all the provided information to create the accounts, the banks, the journals, the taxes, the
         accounting properties... accordingly for the chosen company.
         '''
+        # Ensure everything is translated consitingly to the company's language, not the user's one.
+        self = self.with_context(lang=self.company_id.partner_id.lang)
         if not self.env.user._is_admin():
             raise AccessError(_("Only administrators can change the settings"))
 
@@ -875,7 +886,6 @@ class WizardMultiChartsAccounts(models.TransientModel):
                     res.unlink()
             existing_accounts.unlink()
 
-        ir_values_obj = self.env['ir.values']
         company = self.company_id
         self.company_id.write({'currency_id': self.currency_id.id,
                                'accounts_code_digits': self.code_digits,
@@ -901,24 +911,18 @@ class WizardMultiChartsAccounts(models.TransientModel):
         # Install all the templates objects and generate the real objects
         acc_template_ref, taxes_ref = self.chart_template_id._install_template(company, code_digits=self.code_digits, transfer_account_id=self.transfer_account_id)
 
-        # write values of default taxes for product as super user
+        # write values of default taxes for product as super user and write in the config
+        IrDefault = self.env['ir.default']
         if self.sale_tax_id and taxes_ref:
-            ir_values_obj.sudo().set_default('product.template', "taxes_id", [taxes_ref[self.sale_tax_id.id]], for_all_users=True, company_id=company.id)
+            IrDefault.sudo().set('product.template', "taxes_id", [taxes_ref[self.sale_tax_id.id]], company_id=company.id)
         if self.purchase_tax_id and taxes_ref:
-            ir_values_obj.sudo().set_default('product.template', "supplier_taxes_id", [taxes_ref[self.purchase_tax_id.id]], for_all_users=True, company_id=company.id)
+            IrDefault.sudo().set('product.template', "supplier_taxes_id", [taxes_ref[self.purchase_tax_id.id]], company_id=company.id)
 
         # Create Bank journals
         self._create_bank_journals_from_o2m(company, acc_template_ref)
 
         # Create the current year earning account if it wasn't present in the CoA
-        account_obj = self.env['account.account']
-        unaffected_earnings_xml = self.env.ref("account.data_unaffected_earnings")
-        if unaffected_earnings_xml and not account_obj.search([('company_id', '=', company.id), ('user_type_id', '=', unaffected_earnings_xml.id)]):
-            account_obj.create({
-                'code': '999999',
-                'name': _('Undistributed Profits/Losses'),
-                'user_type_id': unaffected_earnings_xml.id,
-                'company_id': company.id,})
+        company.get_unaffected_earnings_account()
         return {}
 
     @api.multi

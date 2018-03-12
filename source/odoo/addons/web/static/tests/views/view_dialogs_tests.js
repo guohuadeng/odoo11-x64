@@ -55,7 +55,7 @@ QUnit.module('Views', {
         });
 
 
-        var dialog = new dialogs.FormViewDialog(parent, {
+        new dialogs.FormViewDialog(parent, {
             res_model: 'partner',
             res_id: 1,
         }).open();
@@ -64,7 +64,42 @@ QUnit.module('Views', {
             "should not have any button in body");
         assert.strictEqual($('div.modal .modal-footer button').length, 1,
             "should have only one button in footer");
-        dialog.destroy();
+        parent.destroy();
+    });
+
+    QUnit.test('formviewdialog buttons in footer are not duplicated', function (assert) {
+        assert.expect(2);
+        this.data.partner.fields.poney_ids = {string: "Poneys", type: "one2many", relation: 'partner'};
+        this.data.partner.records[0].poney_ids = [];
+
+        var parent = createParent({
+            data: this.data,
+            archs: {
+                'partner,false,form':
+                    '<form string="Partner">' +
+                            '<field name="poney_ids"><tree editable="top"><field name="display_name"/></tree></field>' +
+                            '<footer><button string="Custom Button" type="object" class="btn-primary"/></footer>' +
+                    '</form>',
+            },
+        });
+
+        new dialogs.FormViewDialog(parent, {
+            res_model: 'partner',
+            res_id: 1,
+        }).open();
+
+        assert.strictEqual($('div.modal button.btn-primary').length, 1,
+            "should have 1 buttons in modal");
+
+        $('.o_field_x2many_list_row_add a').click();
+        $('input.o_input').trigger($.Event('keydown', {
+            which: $.ui.keyCode.ESCAPE,
+            keyCode: $.ui.keyCode.ESCAPE,
+        }));
+
+        assert.strictEqual($('div.modal button.btn-primary').length, 1,
+            "should still have 1 buttons in modal");
+        parent.destroy();
     });
 
     QUnit.test('SelectCreateDialog use domain, group_by and search default', function (assert) {
@@ -95,6 +130,7 @@ QUnit.module('Views', {
                         domain: [["display_name","like","a"], ["display_name","ilike","piou"], ["foo","ilike","piou"]],
                         fields:["display_name","foo","bar"],
                         groupby:["bar"],
+                        orderby: '',
                         lazy: true
                     }, "should search with the complete domain (domain + search), and group by 'bar'");
                 }
@@ -137,7 +173,74 @@ QUnit.module('Views', {
         dialog.$('.o_searchview_facet:contains(groupby_bar) .o_facet_remove').click();
         dialog.$('.o_searchview_facet .o_facet_remove').click();
 
-        dialog.destroy();
+        parent.destroy();
+    });
+
+    QUnit.test('SelectCreateDialog correctly evaluates domains', function (assert) {
+        assert.expect(1);
+
+        var parent = createParent({
+            data: this.data,
+            archs: {
+                'partner,false,list':
+                    '<tree string="Partner">' +
+                        '<field name="display_name"/>' +
+                        '<field name="foo"/>' +
+                    '</tree>',
+                'partner,false,search':
+                    '<search>' +
+                        '<field name="foo"/>' +
+                    '</search>',
+            },
+            mockRPC: function (route, args) {
+                if (route === '/web/dataset/search_read') {
+                    assert.deepEqual(args.domain, [['id', '=', 2]],
+                        "should have correctly evaluated the domain");
+                }
+                return this._super.apply(this, arguments);
+            },
+            session: {
+                user_context: {uid: 2},
+            },
+        });
+
+        new dialogs.SelectCreateDialog(parent, {
+            no_create: true,
+            readonly: true,
+            res_model: 'partner',
+            domain: "[['id', '=', uid]]",
+        }).open();
+
+        parent.destroy();
+    });
+
+    QUnit.test('SelectCreateDialog list view in readonly', function (assert) {
+        assert.expect(1);
+
+        var parent = createParent({
+            data: this.data,
+            archs: {
+                'partner,false,list':
+                    '<tree string="Partner" editable="bottom">' +
+                        '<field name="display_name"/>' +
+                        '<field name="foo"/>' +
+                    '</tree>',
+                'partner,false,search':
+                    '<search/>'
+            },
+        });
+
+        var dialog = new dialogs.SelectCreateDialog(parent, {
+            res_model: 'partner',
+        }).open();
+
+        // click on the first row to see if the list is editable
+        dialog.$('.o_list_view tbody tr:first td:not(.o_list_record_selector):first').click();
+
+        assert.equal(dialog.$('.o_list_view tbody tr:first td:not(.o_list_record_selector):first input').length, 0,
+            "list view should not be editable in a SelectCreateDialog");
+
+        parent.destroy();
     });
 
 });

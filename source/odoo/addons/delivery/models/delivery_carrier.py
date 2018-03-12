@@ -87,9 +87,9 @@ class DeliveryCarrier(models.Model):
             return False
         if self.state_ids and partner.state_id not in self.state_ids:
             return False
-        if self.zip_from and (partner.zip or '') < self.zip_from:
+        if self.zip_from and (partner.zip or '').upper() < self.zip_from.upper():
             return False
-        if self.zip_to and (partner.zip or '') > self.zip_to:
+        if self.zip_to and (partner.zip or '').upper() > self.zip_to.upper():
             return False
         return True
 
@@ -122,7 +122,7 @@ class DeliveryCarrier(models.Model):
             res['price'] = res['price'] * (1.0 + (float(self.margin) / 100.0))
             # free when order is large enough
             if res['success'] and self.free_over and order._compute_amount_total_without_delivery() >= self.amount:
-                res['warning_message'] = _('Info:\nTotal amount of this order is above %.2f, free shipping!\n(actual cost: %.2f)') % (self.amount, res['price'])
+                res['warning_message'] = _('Info:\nThe shipping is free because the order amount exceeds %.2f.\n(The actual shipping cost is: %.2f)') % (self.amount, res['price'])
                 res['price'] = 0.0
             return res
 
@@ -199,8 +199,11 @@ class DeliveryCarrier(models.Model):
             carrier.product_id.list_price = carrier.fixed_price
 
     def fixed_rate_shipment(self, order):
+        price = self.fixed_price
+        if self.company_id.currency_id.id != order.currency_id.id:
+            price = self.env['res.currency']._compute(self.company_id.currency_id, order.currency_id, price)
         return {'success': True,
-                'price': self.fixed_price,
+                'price': price,
                 'error_message': False,
                 'warning_message': False}
 

@@ -212,11 +212,11 @@ tour.register('main_flow_tour', {
     content: _t('Go to invoicing tab'),
     position: 'bottom',
 }, {
-    trigger: '.o_field_widget[name=invoice_policy] .o_radio_input[data-value="delivery"]',
-    content: _t('Change invoicing policy'),
+    trigger: '.o_field_widget[name=service_policy] .o_radio_input[data-value="delivered_timesheet"]',
+    content: _t('Change service policy'),
     position: 'left',
 }, {
-    trigger: '.o_field_widget[name=track_service] input[data-value="task"]',
+    trigger: '.o_field_widget[name=service_tracking] input[data-value="task_global_project"]',
     content: _t('Change track service'),
     position: 'left',
 }, {
@@ -367,11 +367,11 @@ tour.register('main_flow_tour', {
     position: 'bottom',
 }, {
     edition: "enterprise",
-    trigger: ".o_menu_sections a:contains('Inventory Control')",
-    content: _t("Go to Inventory Control"),
+    trigger: ".o_menu_sections a:contains('Master Data')",
+    content: _t("Go to Master Data"),
     position: "bottom"
 }, {
-    trigger: ".o_menu_sections a:has(span:contains('Reordering Rules')), .oe_secondary_submenu .oe_menu_text:contains('Reordering Rules'):first",
+    trigger: ".o_menu_sections a[data-menu-xmlid='stock.menu_reordering_rules_config'], .oe_secondary_submenu a[data-menu-xmlid='stock.menu_reordering_rules_config']",
     content: _t("Reordering Rules"),
     position: "bottom"
 }, {
@@ -403,12 +403,12 @@ tour.register('main_flow_tour', {
 }, {
 // Run the schedulers
     edition: "enterprise",
-    trigger: ".o_menu_sections a:contains('Schedulers')",
-    content: _t("Go to Schedulers"),
+    trigger: ".o_menu_sections a:contains('Operations')",
+    content: _t("Go to Run Schedulers"),
     position: "bottom"
-}, {
-    trigger: ".o_menu_sections a:has(span:contains('Run Schedulers')), .oe_secondary_submenu .oe_menu_text:contains('Run Schedulers'):first",
-    content: _t("Run the schedulers"),
+},{
+    trigger: ".o_menu_sections a[data-menu-xmlid='stock.menu_procurement_compute'], .oe_secondary_submenu a[data-menu-xmlid='stock.menu_procurement_compute']",
+    content: _t("Click on schedulers"),
     position: "bottom"
 }, {
     trigger: ".modal-footer .btn-primary",

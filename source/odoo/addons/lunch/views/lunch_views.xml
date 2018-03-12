@@ -100,7 +100,7 @@
                                 <div class="row mb4">
                                     <div class="col-xs-8">
                                         <span>
-                                            <strong><t t-esc="record.description.value"/></strong>
+                                            <strong class="o_kanban_record_title"><t t-esc="record.description.value"/></strong>
                                         </span>
                                     </div>
                                     <div class="col-xs-4 text-right">
@@ -333,7 +333,7 @@
             </p>
               <p>
                 Alerts are used to warn employee from possible issues concerning the lunch orders.
-                To create a lunch alert you have to define its recurrency, the time interval during which the alert should be executed and the message to display.
+                To create a lunch alert you have to define its recurrence, the time interval during which the alert should be executed and the message to display.
             </p>
             <p>
                 Example: <br/>
@@ -379,15 +379,11 @@
                     <templates>
                         <t t-name="kanban-box">
                             <div class="oe_kanban_global_click">
-                                <div class="row mb4">
-                                    <div class="col-xs-6">
-                                        <strong><field name="product_id"/></strong>
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title"><field name="product_id"/></strong>
                                     </div>
-                                    <div class="col-xs-6">
-                                        <span class="pull-right">
-                                            <field name="state" widget="kanban_label_selection" options="{'classes': {'new': 'default', 'confirmed': 'success', 'cancelled':'danger'}}"/>
-                                        </span>
-                                    </div>
+                                    <field name="state" widget="kanban_label_selection" options="{'classes': {'new': 'default', 'confirmed': 'success', 'cancelled':'danger'}}"/>
                                 </div>
                                 <div>
                                     <field name="note"/>
@@ -402,13 +398,13 @@
                                 </div>
                                 <div class="row mt4">
                                     <div class="col-xs-6">
-                                        <a class="btn btn-sm btn-success" name="order" string="Order" type="object" attrs="{'invisible': ['|',('state','=','confirmed'),('state','=','ordered')]}" groups="lunch.group_lunch_manager">
+                                        <a class="btn btn-xs btn-success" name="order" string="Order" type="object" attrs="{'invisible': ['|',('state','=','confirmed'),('state','=','ordered')]}" groups="lunch.group_lunch_manager">
                                             <i class="fa fa-phone"/>
                                         </a>
-                                        <a class="btn btn-sm btn-info" name="confirm" string="Receive" type="object" attrs="{'invisible': [('state','!=','ordered')]}" groups="lunch.group_lunch_manager">
+                                        <a class="btn btn-xs btn-info" name="confirm" string="Receive" type="object" attrs="{'invisible': [('state','!=','ordered')]}" groups="lunch.group_lunch_manager">
                                             <i class="fa fa-check"/>
                                         </a>
-                                        <a class="btn btn-sm btn-danger" name="cancel" string="Cancel" type="object" attrs="{'invisible': [('state','=','cancelled')]}" groups="lunch.group_lunch_manager">
+                                        <a class="btn btn-xs btn-danger" name="cancel" string="Cancel" type="object" attrs="{'invisible': [('state','=','cancelled')]}" groups="lunch.group_lunch_manager">
                                             <i class="fa fa-times"/>
                                         </a>
                                     </div>
@@ -473,7 +469,7 @@
                                 </div>
                             </div>
                         </group>
-                        
+
                         <div>
                             <field name='previous_order_widget' widget='previous_order' class='o_lunch_last_orders'/>
                         </div>
@@ -524,15 +520,16 @@
                     <templates>
                         <t t-name="kanban-box">
                             <div t-attf-class="oe_kanban_global_click">
-                                <div class="row mb4">
-                                    <div class="col-xs-8">
-                                        <strong><t t-esc="record.name.value"/></strong>
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title"><t t-esc="record.name.value"/></strong>
                                     </div>
-                                    <div class="col-xs-4">
-                                        <span class="badge pull-right">
-                                            Price: <t t-esc="record.price.value"/>
-                                        </span>
-                                    </div>
+                                    <span class="badge pull-right">
+                                        Price: <t t-esc="record.price.value"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <t t-esc="record.supplier.value"/>
                                 </div>
                                 <div>
                                     <t t-esc="record.description.value"/>
@@ -548,18 +545,9 @@
             <field name="name">Lunch: Archive/Restore products</field>
             <field name="type">ir.actions.server</field>
             <field name="model_id" ref="model_lunch_product" />
+            <field name="binding_model_id" ref="model_lunch_product" />
             <field name="state">code</field>
             <field name="code">records.toggle_active()</field>
-        </record>
-
-        <record id="ir_values_lunch_archive_product" model="ir.values">
-            <field name="name">action_lunch_archive_product</field>
-            <field name="action_id" ref="action_server_lunch_archive_product" />
-            <field name="value" eval="'ir.actions.server,' + str(ref('action_server_lunch_archive_product'))"/>
-            <field name="key">action</field>
-            <field name="model_id" ref="model_lunch_product" />
-            <field name="model">lunch.product</field>
-            <field name="key2">client_action_multi</field>
         </record>
 
         <!-- Search for product -->
@@ -639,8 +627,8 @@
                     <templates>
                         <t t-name="kanban-box">
                             <div t-attf-class="oe_kanban_global_click">
-                                <div>
-                                    <strong><t t-esc="record.message.value"/></strong>
+                                <div class="o_kanban_record_top">
+                                    <strong class="o_kanban_record_title"><t t-esc="record.message.value"/></strong>
                                 </div>
                                 <div class="row mb4">
                                     <div class="col-xs-6">

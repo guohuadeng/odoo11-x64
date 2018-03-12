@@ -94,7 +94,7 @@
                     <field name="name"/>
                     <field name="account_id" groups="account.group_account_user"/>
                     <field name="base"/>
-                    <field name="amount"/>
+                    <field name="amount_total"/>
                     <field name="currency_id" invisible="1"/>
                 </tree>
             </field>
@@ -111,7 +111,7 @@
                         <field name="account_id" groups="account.group_account_user"/>
                         <field name="account_analytic_id" domain="[('company_id', '=', parent.company_id)]" groups="analytic.group_analytic_accounting"/>
                         <field name="manual"/>
-                        <field name="amount"/>
+                        <field name="amount_total"/>
                         <field name="base"/>
                         <field name="currency_id" invisible="1"/>
                     </group>
@@ -159,19 +159,17 @@
                     <templates>
                         <t t-name="kanban-box">
                             <div t-attf-class="oe_kanban_card oe_kanban_global_click">
-                                <div class="row">
-                                    <div class="col-xs-6">
-                                        <strong><span><t t-esc="record.partner_id.value"/></span></strong>
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title"><span><t t-esc="record.partner_id.value"/></span></strong>
                                     </div>
-                                    <div class="col-xs-6 pull-right text-right">
-                                        <strong><field name="amount_total_signed" widget="monetary"/></strong>
-                                    </div>
+                                    <strong><field name="amount_total_signed" widget="monetary"/></strong>
                                 </div>
-                                <div class="row">
-                                    <div class="col-xs-6 text-muted">
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left text-muted">
                                         <span><t t-esc="record.number.value"/> <t t-esc="record.date_invoice.value"/></span>
                                     </div>
-                                    <div class="col-xs-6">
+                                    <div class="oe_kanban_bottom_right">
                                         <span class="pull-right text-right">
                                             <field name="state" widget="label_selection" options="{'classes': {'draft': 'default', 'cancel': 'default', 'none': 'danger', 'open': 'warning',
                                             'paid': 'success'}}"/>
@@ -223,7 +221,7 @@
                         <button name="action_invoice_draft" states="cancel" string="Set to Draft" type="object" groups="account.group_account_invoice"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,open,paid" />
                 </header>
-                <div class="alert alert-info" role="alert" style="margin-bottom:0px;" attrs="{'invisible': [('has_outstanding','=',False)]}">
+                <div groups="account.group_account_invoice" class="alert alert-info" role="alert" style="margin-bottom:0px;" attrs="{'invisible': [('has_outstanding','=',False)]}">
                     You have <bold><a class="alert-link" href="#outstanding" role="button">outstanding debits</a></bold> for this supplier. You can allocate them to mark this bill as paid.
                 </div>
                 <field name="has_outstanding" invisible="1"/>
@@ -238,7 +236,7 @@
                             <field name="number" class="oe_inline"  attrs="{'invisible': [('state', '=', 'draft')]}"/>
                             <div  attrs="{'invisible': [('sequence_number_next_prefix','=',False)]}">
                                 <field name="sequence_number_next_prefix" class="oe_inline"/>
-                                <field name="sequence_number_next" class="oe_inline" style="width: 80px !important;"/>
+                                <field name="sequence_number_next" class="oe_inline"/>
                             </div>
                         </h1>
                     </div>
@@ -253,7 +251,7 @@
                         <group>
                             <field name="origin" attrs="{'invisible': [('origin', '=', False)]}"/>
                             <field name="date_invoice" string="Bill Date"/>
-                            <field name="date_due" attrs="{'readonly': [('payment_term_id','!=',False)]}"/>
+                            <field name="date_due" attrs="{'readonly': ['|',('payment_term_id','!=',False), ('state','=','paid')]}" force_save="1"/>
                             <field name="move_name" invisible="1"/>
                             <field name="currency_id" options="{'no_create': True, 'no_open': True}" groups="base.group_multi_currency"/>
                             <field name="company_currency_id" invisible="1"/>
@@ -297,7 +295,9 @@
                                                 <field name="account_id" groups="account.group_account_user"/>
                                                 <field name="account_analytic_id" domain="[('company_id', '=', parent.company_id)]" groups="analytic.group_analytic_accounting"/>
                                                 <field name="amount"/>
-                                                <field name="currency_id" invisible="1"/>
+                                                <field name="amount_rounding" invisible="1"/>
+                                                <field name="amount_total" invisible="1"/>
+                                                <field name="currency_id" invisible="1" force_save="1"/>
                                             </tree>
                                         </field>
                                     </div>
@@ -325,8 +325,8 @@
                                     <field name="user_id" string="Responsible"/>
                                     <field domain="[('company_id', '=', company_id), ('internal_type', '=', 'payable'), ('deprecated', '=', False)]"
                                 name="account_id" groups="account.group_account_user"/>
-                                    <field name="name" invisible="1"/>
                                     <field name="payment_term_id" options="{'no_create': True}"/>
+                                    <field name="name"/>
                                 </group>
                                 <group>
                                     <field name="fiscal_position_id" options="{'no_create': True}" placeholder="Auto-detect"/>
@@ -363,11 +363,13 @@
                     <button name="action_invoice_draft" states="cancel" string="Reset to Draft" type="object" groups="account.group_account_invoice"/>
                     <field name="state" widget="statusbar" nolabel="1" statusbar_visible="draft,open,paid"/>
                 </header>
-                <div class="alert alert-info" role="alert" style="margin-bottom:0px;" attrs="{'invisible': [('has_outstanding','=',False)]}">
+                <div groups="account.group_account_invoice" class="alert alert-info" role="alert" style="margin-bottom:0px;" attrs="{'invisible': [('has_outstanding','=',False)]}">
                     You have <bold><a class="alert-link" href="#outstanding" role="button">outstanding payments</a></bold> for this customer. You can allocate them to mark this invoice as paid.
                 </div>
                 <field name="has_outstanding" invisible="1"/>
                 <sheet string="Invoice">
+                    <div class="oe_button_box" name="button_box">
+                    </div>
                     <label string="Credit Note" attrs="{'invisible': ['|',('state','=','draft'), ('type','!=','out_refund')]}"/>
                     <h1 class="mt0">
                         <div attrs="{'invisible': [('sequence_number_next_prefix','!=',False)]}">
@@ -378,7 +380,7 @@
                         <div  attrs="{'invisible': [('sequence_number_next_prefix','=',False)]}">
                             <label string="Invoice Number:"/><br/>
                             <field name="sequence_number_next_prefix" class="oe_inline"/>
-                            <field name="sequence_number_next" class="oe_inline" style="width: 80px !important;"/>
+                            <field name="sequence_number_next" class="oe_inline"/>
                         </div>
                     </h1>
                     <field name="type" invisible="1"/>
@@ -388,10 +390,12 @@
                                 context="{'search_default_customer':1, 'show_address': 1, 'default_company_type': 'company'}"
                                 options='{"always_reload": True, "no_quick_create": True}'
                                 domain="[('customer', '=', True)]"/>
+                            <field name="payment_term_id"/>
+                            <field name="cash_rounding_id" groups="account.group_cash_rounding"/>
                         </group>
                         <group>
                             <field name="date_invoice"/>
-                            <field name="date_due" attrs="{'readonly': [('payment_term_id','!=',False)]}"/>
+                            <field name="date_due" attrs="{'readonly': ['|',('payment_term_id','!=',False), ('state','=','paid')]}" force_save="1"/>
                             <field name="move_name" invisible="1"/>
                             <field name="user_id" groups="base.group_user"/>
                             <label for="currency_id" groups="base.group_multi_currency"/>
@@ -409,6 +413,7 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" domain="[('sale_ok','=',True)]"/>
                                     <field name="origin" invisible="1"/>
+                                    <field name="is_rounding_line" invisible="1"/>
                                     <field name="name"/>
                                     <field name="company_id" invisible="1"/>
                                     <field name="account_id" groups="account.group_account_user"
@@ -466,7 +471,6 @@
                         <page string="Other Info" name="other_info">
                             <group>
                                 <group>
-                                    <field name="payment_term_id"/>
                                     <field name="fiscal_position_id" options="{'no_create': True}" />
                                     <field name="journal_id" groups="account.group_account_user"
                                         options="{'no_create': True}" attrs="{'readonly':[('move_name','!=',False)]}"/>
@@ -490,8 +494,10 @@
                                     <field name="sequence" invisible="1"/>
                                     <field name="manual" invisible="1"/>
                                     <field name="account_id" groups="account.group_account_user"/>
-                                    <field name="amount"/>
-                                    <field name="currency_id" invisible="1"/>
+                                    <field name="amount" invisible="1"/>
+                                    <field name="amount_rounding" invisible="1"/>
+                                    <field name="amount_total"/>
+                                    <field name="currency_id" invisible="1" force_save="1"/>
                                 </tree>
                             </field>
                         </page>
@@ -522,10 +528,8 @@
                     <field name="number" string="Invoice" filter_domain="['|','|','|', ('number','ilike',self), ('origin','ilike',self), ('reference', 'ilike', self), ('partner_id', 'child_of', self)]"/>
                     <field name="journal_id" />
                     <filter name="draft" string="Draft" domain="[('state','=','draft')]"/>
-                    <filter name="invoices" string="Invoices" domain="['&amp;', ('state','in',['open','paid']),('type','in',('out_invoice','in_invoice'))]"/>
-                    <filter name="refunds" string="Credit Notes" domain="['&amp;', ('state','in',['open','paid']),('type','in',('out_refund','in_refund'))]"/>
-                    <separator/>
-                    <filter name="unpaid" string="Not Paid" domain="[('state','=','open')]"/>
+                    <filter name="unpaid" string="Open" domain="[('state', '=', 'open')]"/>
+                    <filter name="paid" string="Paid" domain="[('state', '=', 'paid')]"/>
                     <filter name="late" string="Overdue" domain="['&amp;', ('date_due', '&lt;', time.strftime('%%Y-%%m-%%d')), ('state', '=', 'open')]" help="Overdue invoices, maturity date passed"/>
                     <separator/>
                     <field name="partner_id" operator="child_of"/>
@@ -554,6 +558,28 @@
                         <filter string="Due Date" context="{'group_by':'date_due'}"/>
                     </group>
                </search>
+            </field>
+        </record>
+
+        <!-- TODO: remove in master -->
+        <record id="view_account_invoice_filter_inherit_invoices" model="ir.ui.view">
+            <field name="name">account.invoice.select.invoices</field>
+            <field name="model">account.invoice</field>
+            <field name="mode">primary</field>
+            <field name="inherit_id" ref="view_account_invoice_filter"/>
+            <field name="arch" type="xml">
+                <data/>
+            </field>
+        </record>
+
+        <!-- TODO: remove in master -->
+        <record id="view_account_invoice_filter_inherit_credit_notes" model="ir.ui.view">
+            <field name="name">account.invoice.select.credit.notes</field>
+            <field name="model">account.invoice</field>
+            <field name="mode">primary</field>
+            <field name="inherit_id" ref="view_account_invoice_filter"/>
+            <field name="arch" type="xml">
+                <data/>
             </field>
         </record>
 
@@ -655,7 +681,7 @@
             <field name="act_window_id" ref="action_invoice_tree1"/>
         </record>
 
-        <menuitem action="action_invoice_tree1" id="menu_action_invoice_tree1" parent="menu_finance_receivables" sequence="1"/>
+        <menuitem action="action_invoice_tree1" id="menu_action_invoice_tree1" parent="menu_finance_receivables_documents" sequence="1"/>
 
         <record id="action_invoice_out_refund" model="ir.actions.act_window">
             <field name="name">Customer Credit Notes</field>
@@ -664,7 +690,7 @@
             <field name="view_mode">tree,kanban,form,calendar,pivot,graph</field>
             <field eval="False" name="view_id"/>
             <field name="domain">[('type','=','out_refund')]</field>
-            <field name="context">{'default_type': 'out_refund', 'journal_type': 'sale'}</field>
+            <field name="context">{'default_type': 'out_refund', 'type': 'out_refund', 'journal_type': 'sale'}</field>
             <field name="search_view_id" ref="view_account_invoice_filter"/>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
@@ -692,7 +718,7 @@
 
         <menuitem action="action_invoice_out_refund"
                   id="menu_action_invoice_out_refund"
-                  parent="menu_finance_receivables"
+                  parent="menu_finance_receivables_documents"
                   sequence="1"/>
 
         <record id="action_invoice_tree2" model="ir.actions.act_window">
@@ -728,7 +754,7 @@
             <field name="act_window_id" ref="action_invoice_tree2"/>
         </record>
 
-        <menuitem action="action_invoice_tree2" id="menu_action_invoice_tree2" parent="menu_finance_payables" sequence="1"/>
+        <menuitem action="action_invoice_tree2" id="menu_action_invoice_tree2" parent="menu_finance_payables_documents" sequence="1"/>
 
 
         <record id="action_invoice_in_refund" model="ir.actions.act_window">
@@ -738,7 +764,7 @@
             <field name="view_mode">tree,kanban,form,calendar,pivot,graph</field>
             <field eval="False" name="view_id"/>
             <field name="domain">[('type','=','in_refund')]</field>
-            <field name="context">{'default_type': 'in_refund', 'journal_type': 'purchase'}</field>
+            <field name="context">{'default_type': 'in_refund', 'type': 'in_refund', 'journal_type': 'purchase'}</field>
             <field name="search_view_id" ref="view_account_invoice_filter"/>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
@@ -763,7 +789,7 @@
 
         <menuitem action="action_invoice_in_refund"
                   id="menu_action_invoice_in_refund"
-                  parent="menu_finance_payables"
+                  parent="menu_finance_payables_documents"
                   sequence="1"/>
 
         <act_window

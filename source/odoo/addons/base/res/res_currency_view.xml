@@ -112,6 +112,12 @@
                                         <span class="badge"><t t-esc="record.symbol.value"/></span>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-xs-12">
+                                        <strong><span>Current Rate: </span></strong>
+                                        <field name="rate"/>
+                                    </div>
+                                </div>
                             </div>
                         </t>
                     </templates>
@@ -134,9 +140,15 @@
                                     options='{"terminology": "active"}'/>
                             </button>
                         </div>
-                        <group col="4">
-                            <field name="name"/>
-                            <field name="rate"/>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="rate"/>
+                            </group>
+                            <group>
+                                <field name="currency_unit_label"/>
+                                <field name="currency_subunit_label"/>
+                            </group>
                         </group>
 
                         <group groups="base.group_no_one">
@@ -178,9 +190,9 @@
             <field name="inherit_id" ref="base.view_company_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@id='company_currency']" position="after">
-                    <label for="id" string=""/>
-                    <p class="text-muted oe_edit_only">
-                        <a href="" type="action" name="%(base.action_currency_all_form)d">Activate Other Currencies</a>
+                    <label for="id" invisible="1"/>
+                    <p class="text-muted">
+                        <a href="" type="action" name="%(base.action_currency_all_form)d">Activate more currencies</a>.
                     </p>
                 </xpath>
             </field>

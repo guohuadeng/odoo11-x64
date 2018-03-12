@@ -79,7 +79,6 @@ class MailThread(models.AbstractModel):
     _description = 'Email Thread'
     _mail_flat_thread = True  # flatten the discussino history
     _mail_post_access = 'write'  # access required on the document to post on it
-    _mail_mass_mailing = False  # enable mass mailing on this model
     _Attachment = namedtuple('Attachment', ('fname', 'content', 'info'))
 
     message_is_follower = fields.Boolean(
@@ -178,10 +177,10 @@ class MailThread(models.AbstractModel):
                              RIGHT JOIN mail_channel_partner cp
                              ON (cp.channel_id = rel.mail_channel_id AND cp.partner_id = %s AND
                                 (cp.seen_message_id IS NULL OR cp.seen_message_id < msg.id))
-                             WHERE msg.model = %s AND msg.res_id in %s AND
+                             WHERE msg.model = %s AND msg.res_id = ANY(%s) AND
                                    (msg.author_id IS NULL OR msg.author_id != %s) AND
                                    (msg.message_type != 'notification' OR msg.model != 'mail.channel')""",
-                         (partner_id, self._name, tuple(self.ids), partner_id,))
+                         (partner_id, self._name, list(self.ids), partner_id,))
         for result in self._cr.fetchall():
             res[result[0]] += 1
 
@@ -238,7 +237,7 @@ class MailThread(models.AbstractModel):
 
         # auto_subscribe: take values and defaults into account
         create_values = dict(values)
-        for key, val in pycompat.items(self._context):
+        for key, val in self._context.items():
             if key.startswith('default_') and key[8:] not in create_values:
                 create_values[key[8:]] = val
         thread.message_auto_subscribe(list(create_values), values=create_values)
@@ -373,7 +372,7 @@ class MailThread(models.AbstractModel):
                 options['display_log_button'] = is_employee
                 # save options on the node
                 node.set('options', repr(options))
-            res['arch'] = etree.tostring(doc)
+            res['arch'] = etree.tostring(doc, encoding='unicode')
         return res
 
     # ------------------------------------------------------
@@ -388,7 +387,7 @@ class MailThread(models.AbstractModel):
                 always tracked fields and modified on_change fields
         """
         tracked_fields = []
-        for name, field in pycompat.items(self._fields):
+        for name, field in self._fields.items():
             if getattr(field, 'track_visibility', False):
                 tracked_fields.append(name)
 
@@ -416,13 +415,13 @@ class MailThread(models.AbstractModel):
 
     @api.multi
     def _message_track_post_template(self, tracking):
-        if not any(change for rec_id, (change, tracking_value_ids) in pycompat.items(tracking)):
+        if not any(change for rec_id, (change, tracking_value_ids) in tracking.items()):
             return True
         templates = self._track_template(tracking)
-        for field_name, (template, post_kwargs) in pycompat.items(templates):
+        for field_name, (template, post_kwargs) in templates.items():
             if not template:
                 continue
-            if isinstance(template, basestring):
+            if isinstance(template, pycompat.string_types):
                 self.message_post_with_view(template, **post_kwargs)
             else:
                 self.message_post_with_template(template.id, **post_kwargs)
@@ -450,7 +449,7 @@ class MailThread(models.AbstractModel):
         display_values_ids = []
 
         # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
-        for col_name, col_info in pycompat.items(tracked_fields):
+        for col_name, col_info in tracked_fields.items():
             track_visibility = getattr(self._fields[col_name], 'track_visibility', 'onchange')
             initial_value = initial[col_name]
             new_value = getattr(self, col_name)
@@ -569,7 +568,7 @@ class MailThread(models.AbstractModel):
     def _generate_notification_token(self, base_link, params):
         secret = self.env['ir.config_parameter'].sudo().get_param('database.secret')
         token = '%s?%s' % (base_link, ' '.join('%s=%s' % (key, params[key]) for key in sorted(params)))
-        hm = hmac.new(str(secret), token, hashlib.sha1).hexdigest()
+        hm = hmac.new(secret.encode('utf-8'), token.encode('utf-8'), hashlib.sha1).hexdigest()
         return hm
 
     @api.multi
@@ -666,7 +665,7 @@ class MailThread(models.AbstractModel):
 
         if message.model:
             model_name = self.env['ir.model']._get(message.model).display_name
-            view_title = '%s %s' % (_('View'), model_name)
+            view_title = _('View %s') % model_name
         else:
             view_title = _('View')
 
@@ -816,7 +815,7 @@ class MailThread(models.AbstractModel):
     def message_capable_models(self):
         """ Used by the plugin addon, based for plugin_outlook and others. """
         ret_dict = {}
-        for model_name, model in pycompat.items(self.env):
+        for model_name, model in self.env.items():
             if hasattr(model, "message_process") and hasattr(model, "message_post"):
                 ret_dict[model_name] = model._description
         return ret_dict
@@ -830,11 +829,13 @@ class MailThread(models.AbstractModel):
 
     def _routing_warn(self, error_message, warn_suffix, message_id, route, raise_exception):
         """ Tools method used in message_route_verify: whether to log a warning or raise an error """
-        full_message = _('Routing mail with Message-Id %s: route %s: %s') % (message_id, route, error_message)
+        short_message = _("Mailbox unavailable - %s") % error_message
+        full_message = ('Routing mail with Message-Id %s: route %s: %s' %
+                        (message_id, route, error_message))
+        _logger.info(full_message + (warn_suffix and '; %s' % warn_suffix or ''))
         if raise_exception:
-            raise ValueError(full_message)
-        else:
-            _logger.info(full_message + warn_suffix and '; %s' % warn_suffix or '')
+            # sender should not see private diagnostics info, just the error
+            raise ValueError(short_message)
 
     def _routing_create_bounce_email(self, email_from, body_html, message):
         bounce_to = tools.decode_message_header(message, 'Return-Path') or email_from
@@ -957,9 +958,10 @@ class MailThread(models.AbstractModel):
                 obj = self.env[alias.alias_parent_model_id.model].browse(alias.alias_parent_thread_id)
             elif model:
                 obj = self.env[model]
-            if not hasattr(obj, '_alias_check_contact'):
-                obj = self.env['mail.alias.mixin']
-            check_result = obj._alias_check_contact(message, message_dict, alias)
+            if hasattr(obj, '_alias_check_contact'):
+                check_result = obj._alias_check_contact(message, message_dict, alias)
+            else:
+                check_result = self.env['mail.alias.mixin']._alias_check_contact_on_record(obj, message, message_dict, alias)
             if check_result is not True:
                 self._routing_warn(_('alias %s: %s') % (alias.alias_name, check_result.get('error_message', _('unknown error'))), _('skipping'), message_id, route, False)
                 self._routing_create_bounce_email(email_from, check_result.get('error_template', _generic_bounce_body_html), message)
@@ -1266,12 +1268,16 @@ class MailThread(models.AbstractModel):
         # we don't know its encoding until we parse its headers and hence can't
         # convert it to utf-8 for transport between the mailgate script and here.
         if isinstance(message, xmlrpclib.Binary):
-            message = str(message.data)
-        # Warning: message_from_string doesn't always work correctly on unicode,
-        # we must use utf-8 strings here :-(
-        if isinstance(message, unicode):
+            message = bytes(message.data)
+        # message_from_string parses from a *native string*, except apparently
+        # sometimes message is ISO-8859-1 binary data or some shit and the
+        # straightforward version (pycompat.to_native) won't work right ->
+        # always encode message to bytes then use the relevant method
+        # depending on ~python version
+        if isinstance(message, pycompat.text_type):
             message = message.encode('utf-8')
-        msg_txt = email.message_from_string(message)
+        extract = getattr(email, 'message_from_bytes', email.message_from_string)
+        msg_txt = extract(message)
 
         # parse the message, verify we are not in a loop by checking message_id is not duplicated
         msg = self.message_parse(msg_txt, save_original=save_original)
@@ -1365,6 +1371,8 @@ class MailThread(models.AbstractModel):
         mail module, and should not contain security or generic html cleaning.
         Indeed those aspects should be covered by the html_sanitize method
         located in tools. """
+        if not body:
+            return body, attachments
         root = lxml.html.fromstring(body)
         postprocessed = False
         to_remove = []
@@ -1384,6 +1392,7 @@ class MailThread(models.AbstractModel):
             node.getparent().remove(node)
         if postprocessed:
             body = etree.tostring(root, pretty_print=False, encoding='UTF-8')
+            body = pycompat.to_native(body)
         return body, attachments
 
     def _message_extract_payload(self, message, save_original=False):
@@ -1399,7 +1408,7 @@ class MailThread(models.AbstractModel):
         # Content-Type: multipart/related;
         #   boundary="_004_3f1e4da175f349248b8d43cdeb9866f1AMSPR06MB343eurprd06pro_";
         #   type="text/html"
-        if not message.is_multipart() or message.get('content-type', '').startswith("text/"):
+        if message.get_content_maintype() == 'text':
             encoding = message.get_content_charset()
             body = message.get_payload(decode=True)
             body = tools.ustr(body, encoding, errors='replace')
@@ -1492,10 +1501,8 @@ class MailThread(models.AbstractModel):
             'message_type': 'email',
         }
         if not isinstance(message, Message):
-            if isinstance(message, unicode):
-                # Warning: message_from_string doesn't always work correctly on unicode,
-                # we must use utf-8 strings here :-(
-                message = message.encode('utf-8')
+            # message_from_string works on a native str
+            message = pycompat.to_native(message)
             message = email.message_from_string(message)
 
         message_id = message['message-id']
@@ -1723,11 +1730,11 @@ class MailThread(models.AbstractModel):
                 cid = info and info.get('cid')
             else:
                 continue
-            if isinstance(content, unicode):
+            if isinstance(content, pycompat.text_type):
                 content = content.encode('utf-8')
             data_attach = {
                 'name': name,
-                'datas': base64.b64encode(str(content)),
+                'datas': base64.b64encode(content),
                 'type': 'binary',
                 'datas_fname': name,
                 'description': name,
@@ -1897,8 +1904,8 @@ class MailThread(models.AbstractModel):
             if not subtype_rec.internal:
                 # done with SUPERUSER_ID, because on some models users can post only with read access, not necessarily write access
                 self.sudo().write({'message_last_post': fields.Datetime.now()})
-        if new_message.author_id and model and self.ids and message_type != 'notification' and not self._context.get('mail_create_nosubscribe'):
-            self.message_subscribe([new_message.author_id.id], force=False)
+        if author_id and model and self.ids and message_type != 'notification' and not self._context.get('mail_create_nosubscribe'):
+            self.message_subscribe([author_id], force=False)
 
         self._message_post_after_hook(new_message)
 
@@ -1920,7 +1927,7 @@ class MailThread(models.AbstractModel):
             values['slug'] = slug
         except ImportError:
             values['slug'] = lambda self: self.id
-        if isinstance(views_or_xmlid, basestring):
+        if isinstance(views_or_xmlid, pycompat.string_types):
             views = self.env.ref(views_or_xmlid, raise_if_not_found=False)
         else:
             views = views_or_xmlid
@@ -2052,7 +2059,7 @@ class MailThread(models.AbstractModel):
         if auto_follow_fields is None:
             auto_follow_fields = ['user_id']
         user_field_lst = []
-        for name, field in pycompat.items(self._fields):
+        for name, field in self._fields.items():
             if name in auto_follow_fields and name in updated_fields and getattr(field, 'track_visibility', False) and field.comodel_name == 'res.users':
                 user_field_lst.append(name)
         return user_field_lst
@@ -2114,11 +2121,10 @@ class MailThread(models.AbstractModel):
         user_field_lst = self._message_get_auto_subscribe_fields(updated_fields)
 
         # fetch header subtypes
-        subtypes = self.env['mail.message.subtype'].search(['|', ('res_model', '=', False), ('parent_id.res_model', '=', self._name)])
+        subtypes, relation_fields = self.env['mail.message.subtype'].auto_subscribe_subtypes(self._name)
 
         # if no change in tracked field or no change in tracked relational field: quit
-        relation_fields = set([subtype.relation_field for subtype in subtypes if subtype.relation_field is not False])
-        if not any(relation in updated_fields for relation in relation_fields) and not user_field_lst:
+        if not any(relation in relation_fields for relation in updated_fields) and not user_field_lst:
             return True
 
         # find followers of headers, update structure for new followers
@@ -2144,14 +2150,14 @@ class MailThread(models.AbstractModel):
                         new_channels.setdefault(header_follower.channel_id.id, set()).add(new_subtype.id)
 
         # add followers coming from res.users relational fields that are tracked
-        to_add_users = self.env['res.users'].sudo().browse([values[name] for name in user_field_lst if values.get(name)])
+        to_add_users = self.env['res.users'].sudo().browse([values[name] for name in user_field_lst if values.get(name)]).filtered(lambda u: u.partner_id.active)
         for partner in to_add_users.mapped('partner_id'):
             new_partners.setdefault(partner.id, None)
 
-        for pid, subtypes in pycompat.items(new_partners):
+        for pid, subtypes in new_partners.items():
             subtypes = list(subtypes) if subtypes is not None else None
             self.message_subscribe(partner_ids=[pid], subtype_ids=subtypes, force=(subtypes != None))
-        for cid, subtypes in pycompat.items(new_channels):
+        for cid, subtypes in new_channels.items():
             subtypes = list(subtypes) if subtypes is not None else None
             self.message_subscribe(channel_ids=[cid], subtype_ids=subtypes, force=(subtypes != None))
 
@@ -2197,13 +2203,3 @@ class MailThread(models.AbstractModel):
         msg_comment.write({"res_id": new_thread.id, "model": new_thread._name})
         msg_not_comment.write({"res_id": new_thread.id, "model": new_thread._name, "subtype_id": None})
         return True
-
-    # ------------------------------------------------------
-    # Mass mailing
-    # ------------------------------------------------------
-
-    def message_mass_mailing_enabled(self):
-        if self._mail_mass_mailing:
-            # TODO master properly translate
-            # the _mail_mass_mailing is evaluted at code start so not translated
-            return _(self._mail_mass_mailing)

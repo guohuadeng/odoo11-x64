@@ -57,27 +57,28 @@
                 <templates>
                     <t t-name="kanban-box">
                         <div>
-                            <div class="o_kanban_card_header oe_kanban_color_1">
-                                <div class="o_kanban_card_header_title">
+                            <div class="o_kanban_card_header">
+                                <div class="o_kanban_card_header_title mb16">
                                     <div class="o_primary">
                                         <t t-esc="record.name.value"/>
-                                        <t t-if="record.pos_session_state.raw_value == 'opening_control'">
-                                            <div class="label label-info o_kanban_inline_block">Opening Control</div>
-                                        </t>
-                                        <t t-if="record.pos_session_state.raw_value == 'opened'">
-                                            <div class="label label-success o_kanban_inline_block">In Progress</div>
-                                        </t>
-                                        <t t-if="record.pos_session_state.raw_value == 'closing_control'">
-                                            <div class="label label-info o_kanban_inline_block">Closing Control</div>
-                                        </t>
                                     </div>
-                                    <div class="o_secondary"><t t-esc="record.pos_session_username.value || 'Unused'"/></div>
+                                    <t t-if="record.pos_session_state.raw_value == 'opening_control'">
+                                        <div class="label label-info o_kanban_inline_block">Opening Control</div>
+                                    </t>
+                                    <t t-if="record.pos_session_state.raw_value == 'opened'">
+                                        <div class="label label-success o_kanban_inline_block">In Progress</div>
+                                    </t>
+                                    <t t-if="record.pos_session_state.raw_value == 'closing_control'">
+                                        <div class="label label-info o_kanban_inline_block">Closing Control</div>
+                                    </t>
+                                    <t t-set="unused_message">Unused</t>
+                                    <div class="o_secondary mt16"><t t-esc="record.pos_session_username.value || unused_message"/></div>
                                 </div>
                                 <div class="o_kanban_manage_button_section">
                                     <a class="o_kanban_manage_toggle_button" href="#"><i class="fa fa-ellipsis-v" /></a>
                                 </div>
                             </div>
-                            <div class="container o_kanban_card_content o_visible">
+                            <div class="container o_kanban_card_content">
                                 <div class="row">
                                     <div class="col-xs-6 o_kanban_primary_left">
                                         <button t-if="record.current_session_state.raw_value === 'opened'" class="btn btn-primary" name="open_ui" type="object">Resume</button>
@@ -110,7 +111,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div><div class="container o_kanban_card_manage_pane o_invisible">
+                            </div><div class="container o_kanban_card_manage_pane">
                                 <div class="row">
                                     <div class="col-xs-6 o_kanban_card_manage_section o_kanban_manage_view">
                                         <div class="o_kanban_card_manage_title">

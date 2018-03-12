@@ -86,10 +86,8 @@ class WebsiteSaleBackend(WebsiteBackend):
                 ('invoice_status', '=', 'to invoice'),
             ]),
             order_carts_abandoned_count=request.env['sale.order'].search_count(sale_order_domain + [
-                ('state', '=', 'draft'),
-                ('order_line', '!=', 'False'),
-                ('partner_id', '!=', request.env.ref('base.public_partner').id),
-                ('date_order', '<=', fields.Datetime.to_string(datetime.now() - timedelta(hours=1))),
+                ('is_abandoned_cart', '=', True),
+                ('cart_recovery_email_sent', '=', False)
             ]),
             payment_to_capture_count=request.env['payment.transaction'].search_count([
                 ('state', '=', 'authorized'),
@@ -143,7 +141,7 @@ class WebsiteSaleBackend(WebsiteBackend):
         sales_graph = [{
             '0': fields.Date.to_string(d) if not previous else fields.Date.to_string(d + timedelta(days=days_between)),
             # Respect read_group format in models.py
-            '1': daily_sales_dict.get(babel.dates.format_date(d, format='dd MMM yyyy', locale=request.env.context.get('lang', 'en_US')), 0)
+            '1': daily_sales_dict.get(babel.dates.format_date(d, format='dd MMM yyyy', locale=request.env.context.get('lang') or 'en_US'), 0)
         } for d in date_list]
 
         return sales_graph

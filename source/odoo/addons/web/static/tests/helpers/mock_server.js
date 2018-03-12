@@ -26,11 +26,11 @@ var MockServer = Class.extend({
             if (!('display_name' in model.fields)) {
                 model.fields.display_name = {string: "Display Name", type: "char"};
             }
+            if (!('__last_update' in model.fields)) {
+                model.fields.__last_update = {string: "Last Modified on", type: "datetime"};
+            }
             if (!('name' in model.fields)) {
                 model.fields.name = {string: "Name", type: "char", default: "name"};
-            }
-            for (var fieldName in model.onchanges) {
-                model.fields[fieldName].onChange = "1";
             }
             model.records = model.records || [];
 
@@ -57,16 +57,22 @@ var MockServer = Class.extend({
      * 'field_view_get' call to the server. Calls processViews() of data_manager
      * to mimick the real behavior of a call to loadViews().
      *
-     * @param {string|Object} arch a string OR a parsed xml document
-     * @param {string} model a model name (that should be in this.data)
+     * @param {Object} params
+     * @param {string|Object} params.arch a string OR a parsed xml document
+     * @param {string} params.model a model name (that should be in this.data)
+     * @param {Object} params.toolbar the actions possible in the toolbar
+     * @param {Object} [params.viewOptions] the view options set in the test (optional)
      * @returns {Object} an object with 2 keys: arch and fields
      */
-    fieldsViewGet: function (arch, model, toolbar) {
+    fieldsViewGet: function (params) {
+        var model = params.model;
+        var toolbar = params.toolbar;
+        var viewOptions = params.viewOptions || {};
         if (!(model in this.data)) {
             throw new Error('Model ' + model + ' was not defined in mock server data');
         }
         var fields = $.extend(true, {}, this.data[model].fields);
-        var fvg = this._fieldsViewGet(arch, model, fields);
+        var fvg = this._fieldsViewGet(params.arch, model, fields, viewOptions.context);
         var fields_views = {};
         fields_views[fvg.type] = fvg;
         data_manager.processViews(fields_views, fields);
@@ -104,6 +110,14 @@ var MockServer = Class.extend({
                 console.log('%c[rpc] response' + route, 'color: blue; font-weight: bold;', JSON.parse(resultString));
             }
             return JSON.parse(resultString);
+        }).fail(function (result) {
+            var errorString = JSON.stringify(result || false);
+            if (logLevel === 1) {
+                console.log('Mock: (ERROR)' + route, JSON.parse(errorString));
+            } else if (logLevel === 2) {
+                console.log('%c[rpc] response (error) ' + route, 'color: orange; font-weight: bold;', JSON.parse(errorString));
+            }
+            return JSON.parse(errorString);
         });
     },
 
@@ -155,10 +169,11 @@ var MockServer = Class.extend({
      * @param {string|Object} arch a string OR a parsed xml document
      * @param {string} model a model name (that should be in this.data)
      * @param {Object} fields
+     * @param {Object} context
      * @returns {Object} an object with 2 keys: arch and fields (the fields
      *   appearing in the views)
      */
-    _fieldsViewGet: function (arch, model, fields) {
+    _fieldsViewGet: function (arch, model, fields, context) {
         var self = this;
         var modifiersNames = ['invisible', 'readonly', 'required'];
         var onchanges = this.data[model].onchanges || {};
@@ -224,9 +239,10 @@ var MockServer = Class.extend({
             }
             _.each(modifiersNames, function (a) {
                 if (node.attrs[a]) {
-                    var v = pyeval.py_eval(node.attrs[a]) ? true: false;
+                    var pyevalContext = window.py.dict.fromJSON(context || {});
+                    var v = pyeval.py_eval(node.attrs[a], {context: pyevalContext}) ? true: false;
                     if (inTreeView && a === 'invisible') {
-                        modifiers['tree_invisible'] = v;
+                        modifiers['column_invisible'] = v;
                     } else if (v || !(a in modifiers) || !_.isArray(modifiers[a])) {
                         modifiers[a] = v;
                     }
@@ -247,18 +263,23 @@ var MockServer = Class.extend({
         var relModel, relFields;
         _.each(fieldNodes, function (node, name) {
             var field = fields[name];
+            if (field.type === "many2one" || field.type === "many2many") {
+                node.attrs.can_create = node.attrs.can_create || "true";
+                node.attrs.can_write = node.attrs.can_write || "true";
+            }
             if (field.type === "one2many" || field.type === "many2many") {
                 field.views = {};
                 _.each(node.children, function (children) {
                     relModel = field.relation;
                     relFields = $.extend(true, {}, self.data[relModel].fields);
-                    field.views[children.tag] = self._fieldsViewGet(children, relModel, relFields);
+                    field.views[children.tag] = self._fieldsViewGet(children, relModel,
+                        relFields, context);
                 });
             }
 
             // add onchanges
             if (name in onchanges) {
-                field.onChange="1";
+                node.attrs.on_change="1";
             }
         });
         return {
@@ -471,9 +492,13 @@ var MockServer = Class.extend({
                 return record.display_name.indexOf(str) !== -1;
             });
         }
-        return _.map(records, function (record) {
+        var result = _.map(records, function (record) {
             return [record.id, record.display_name];
         });
+        if (args.limit) {
+            return result.slice(0, args.limit);
+        }
+        return result;
     },
     /**
      * Simulate an 'onchange' rpc
@@ -686,7 +711,58 @@ var MockServer = Class.extend({
 
             return res;
         });
+
+        if (kwargs.orderby) {
+            // only consider first sorting level
+            kwargs.orderby = kwargs.orderby.split(',')[0];
+            var fieldName = kwargs.orderby.split(' ')[0];
+            var order = kwargs.orderby.split(' ')[1];
+            result.sort(function (g1, g2) {
+                if (g1[fieldName] < g2[fieldName]) {
+                    return order === 'ASC' ? -1 : 1;
+                }
+                if (g1[fieldName] > g2[fieldName]) {
+                    return order === 'ASC' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
         return result;
+    },
+    /**
+     * Simulates a 'read_progress_bar' operation
+     *
+     * @private
+     * @param {string} model
+     * @param {Object} kwargs
+     * @returns {Object[][]}
+     */
+    _mockReadProgressBar: function (model, kwargs) {
+        var domain = kwargs.domain;
+        var groupBy = kwargs.groupBy;
+        var progress_bar = kwargs.progress_bar;
+
+        var records = this._getRecords(model, domain || []);
+
+        var data = {};
+        _.each(records, function (record) {
+            var groupByValue = record[groupBy]; // always technical value here
+
+            if (!(groupByValue in data)) {
+                data[groupByValue] = {};
+                _.each(progress_bar.colors, function (val, key) {
+                    data[groupByValue][key] = 0;
+                });
+            }
+
+            var fieldValue = record[progress_bar.field];
+            if (fieldValue in data[groupByValue]) {
+                data[groupByValue][fieldValue]++;
+            }
+        });
+
+        return data;
     },
     /**
      * Simulate a 'search_count' operation
@@ -846,7 +922,7 @@ var MockServer = Class.extend({
             case '/web/dataset/search_read':
                 return $.when(this._mockSearchReadController(args));
         }
-        if (route.indexOf('/web/image/') === 0) {
+        if (route.indexOf('/web/image') >= 0 || _.contains(['.png', '.jpg'], route.substr(route.length - 4))) {
             return $.when();
         }
         switch (args.method) {
@@ -880,6 +956,9 @@ var MockServer = Class.extend({
             case 'read_group':
                 return $.when(this._mockReadGroup(args.model, args.kwargs));
 
+            case 'read_progress_bar':
+                return $.when(this._mockReadProgressBar(args.model, args.kwargs));
+
             case 'search_count':
                 return $.when(this._mockSearchCount(args.model, args.args));
 
@@ -897,8 +976,7 @@ var MockServer = Class.extend({
             return $.when(this.data[args.model][args.method](args.args, args.kwargs));
         }
 
-        console.error("Unimplemented route", route, args);
-        return $.when();
+        throw new Error("Unimplemented route: " + route);
     },
     /**
      * helper function: traverse a tree and apply the function f to each of its

@@ -16,10 +16,10 @@ class StockPicking(models.Model):
         res = super(StockPicking, self)._create_backorder(backorder_moves)
         for picking in self:
             if picking.picking_type_id.code == 'incoming':
-                backorder = self.search([('backorder_id', '=', picking.id)])
-                backorder.message_post_with_view('mail.message_origin_link',
-                    values={'self': backorder, 'origin': backorder.purchase_id},
-                    subtype_id=self.env.ref('mail.mt_note').id)
+                for backorder in self.search([('backorder_id', '=', picking.id)]):
+                    backorder.message_post_with_view('mail.message_origin_link',
+                        values={'self': backorder, 'origin': backorder.purchase_id},
+                        subtype_id=self.env.ref('mail.mt_note').id)
         return res
 
 
@@ -28,12 +28,27 @@ class StockMove(models.Model):
 
     purchase_line_id = fields.Many2one('purchase.order.line',
         'Purchase Order Line', ondelete='set null', index=True, readonly=True, copy=False)
+    created_purchase_line_id = fields.Many2one('purchase.order.line',
+        'Created Purchase Order Line', ondelete='set null', readonly=True, copy=False)
+
+    @api.model
+    def _prepare_merge_moves_distinct_fields(self):
+        distinct_fields = super(StockMove, self)._prepare_merge_moves_distinct_fields()
+        distinct_fields += ['purchase_line_id', 'created_purchase_line_id']
+        return distinct_fields
+
+    @api.model
+    def _prepare_merge_move_sort_method(self, move):
+        move.ensure_one()
+        keys_sorted = super(StockMove, self)._prepare_merge_move_sort_method(move)
+        keys_sorted += [move.purchase_line_id.id, move.created_purchase_line_id.id]
+        return keys_sorted
 
     @api.multi
     def _get_price_unit(self):
         """ Returns the unit price for the move"""
         self.ensure_one()
-        if self.purchase_line_id:
+        if self.purchase_line_id and self.product_id.id == self.purchase_line_id.product_id.id:
             line = self.purchase_line_id
             order = line.order_id
             price_unit = line.price_unit
@@ -55,6 +70,23 @@ class StockMove(models.Model):
         vals = super(StockMove, self)._prepare_move_split_vals(uom_qty)
         vals['purchase_line_id'] = self.purchase_line_id.id
         return vals
+
+    def _action_cancel(self):
+        for move in self:
+            if move.created_purchase_line_id:
+                try:
+                    activity_type_id = self.env.ref('mail.mail_activity_data_todo').id
+                except ValueError:
+                    activity_type_id = False
+                self.env['mail.activity'].create({
+                    'activity_type_id': activity_type_id,
+                    'note': _('A sale order that generated this purchase order has been deleted. Check if an action is needed.'),
+                    'user_id': move.created_purchase_line_id.product_id.responsible_id.id,
+                    'res_id': move.created_purchase_line_id.order_id.id,
+                    'res_model_id': self.env.ref('purchase.model_purchase_order').id,
+                })
+        return super(StockMove, self)._action_cancel()
+
 
 class StockWarehouse(models.Model):
     _inherit = 'stock.warehouse'
@@ -137,3 +169,29 @@ class ReturnPicking(models.TransientModel):
         vals = super(ReturnPicking, self)._prepare_move_default_values(return_line, new_picking)
         vals['purchase_line_id'] = return_line.move_id.purchase_line_id.id
         return vals
+
+
+class Orderpoint(models.Model):
+    _inherit = "stock.warehouse.orderpoint"
+
+    def _quantity_in_progress(self):
+        res = super(Orderpoint, self)._quantity_in_progress()
+        for poline in self.env['purchase.order.line'].search([('state','in',('draft','sent','to approve')),('orderpoint_id','in',self.ids)]):
+            res[poline.orderpoint_id.id] += poline.product_uom._compute_quantity(poline.product_qty, poline.orderpoint_id.product_uom, round=False)
+        return res
+
+    def action_view_purchase(self):
+        """ This function returns an action that display existing
+        purchase orders of given orderpoint.
+        """
+        action = self.env.ref('purchase.purchase_rfq')
+        result = action.read()[0]
+
+        # Remvove the context since the action basically display RFQ and not PO.
+        result['context'] = {}
+        order_line_ids = self.env['purchase.order.line'].search([('orderpoint_id', '=', self.id)])
+        purchase_ids = order_line_ids.mapped('order_id')
+
+        result['domain'] = "[('id','in',%s)]" % (purchase_ids.ids)
+
+        return result

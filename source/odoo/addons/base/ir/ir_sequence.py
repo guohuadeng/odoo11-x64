@@ -6,7 +6,6 @@ import pytz
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-from odoo.tools import pycompat
 
 _logger = logging.getLogger(__name__)
 
@@ -55,6 +54,24 @@ def _update_nogap(self, number_increment):
     self.invalidate_cache(['number_next'], [self.id])
     return number_next
 
+def _predict_nextval(self, seq_id):
+    """Predict next value for PostgreSQL sequence without consuming it"""
+    # Cannot use currval() as it requires prior call to nextval()
+    query = """SELECT last_value,
+                      (SELECT increment_by
+                       FROM pg_sequences
+                       WHERE sequencename = 'ir_sequence_%(seq_id)s'),
+                      is_called
+               FROM ir_sequence_%(seq_id)s"""
+    if self.env.cr._cnx.server_version < 100000:
+        query = "SELECT last_value, increment_by, is_called FROM ir_sequence_%(seq_id)s"
+    self.env.cr.execute(query % {'seq_id': seq_id})
+    (last_value, increment_by, is_called) = self.env.cr.fetchone()
+    if is_called:
+        return last_value + increment_by
+    # sequence has just been RESTARTed to return last_value next time
+    return last_value
+
 
 class IrSequence(models.Model):
     """ Sequence model.
@@ -74,19 +91,12 @@ class IrSequence(models.Model):
             if seq.implementation != 'standard':
                 seq.number_next_actual = seq.number_next
             else:
-                # get number from postgres sequence. Cannot use currval, because that might give an error when
-                # not having used nextval before.
-                query = "SELECT last_value, increment_by, is_called FROM ir_sequence_%03d" % seq.id
-                self._cr.execute(query)
-                (last_value, increment_by, is_called) = self._cr.fetchone()
-                if is_called:
-                    seq.number_next_actual = last_value + increment_by
-                else:
-                    seq.number_next_actual = last_value
+                seq_id = "%03d" % seq.id
+                seq.number_next_actual = _predict_nextval(self, seq_id)
 
     def _set_number_next_actual(self):
         for seq in self:
-            seq.write({'number_next': seq.number_next_actual or 0})
+            seq.write({'number_next': seq.number_next_actual or 1})
 
     @api.model
     def _get_current_sequence(self):
@@ -109,7 +119,7 @@ class IrSequence(models.Model):
     implementation = fields.Selection([('standard', 'Standard'), ('no_gap', 'No gap')],
                                       string='Implementation', required=True, default='standard',
                                       help="Two sequence object implementations are offered: Standard "
-                                           "and 'No gap'. The later is slower than the former but forbids any"
+                                           "and 'No gap'. The later is slower than the former but forbids any "
                                            "gap in the sequence (while they are possible in the former).")
     active = fields.Boolean(default=True)
     prefix = fields.Char(help="Prefix value of the record for the sequence")
@@ -195,7 +205,7 @@ class IrSequence(models.Model):
                 'weekday': '%w', 'h24': '%H', 'h12': '%I', 'min': '%M', 'sec': '%S'
             }
             res = {}
-            for key, format in pycompat.items(sequences):
+            for key, format in sequences.items():
                 res[key] = effective_date.strftime(format)
                 res['range_' + key] = range_date.strftime(format)
                 res['current_' + key] = now.strftime(format)
@@ -312,18 +322,18 @@ class IrSequenceDateRange(models.Model):
             if seq.sequence_id.implementation != 'standard':
                 seq.number_next_actual = seq.number_next
             else:
-                # get number from postgres sequence. Cannot use currval, because that might give an error when
-                # not having used nextval before.
-                self._cr.execute("SELECT last_value, increment_by, is_called FROM ir_sequence_%03d_%03d" % (seq.sequence_id.id, seq.id))
-                (last_value, increment_by, is_called) = self._cr.fetchone()
-                if is_called:
-                    seq.number_next_actual = last_value + increment_by
-                else:
-                    seq.number_next_actual = last_value
+                seq_id = "%03d_%03d" % (seq.sequence_id.id, seq.id)
+                seq.number_next_actual = _predict_nextval(self, seq_id)
 
     def _set_number_next_actual(self):
         for seq in self:
-            seq.write({'number_next': seq.number_next_actual or 0})
+            seq.write({'number_next': seq.number_next_actual or 1})
+
+    @api.model
+    def default_get(self, fields):
+        result = super(IrSequenceDateRange, self).default_get(fields)
+        result['number_next_actual'] = 1
+        return result
 
     date_from = fields.Date(string='From', required=True)
     date_to = fields.Date(string='To', required=True)

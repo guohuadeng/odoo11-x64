@@ -2,6 +2,8 @@ odoo.define('mail.ChatThread', function (require) {
 "use strict";
 
 var core = require('web.core');
+var time = require('web.time');
+var DocumentViewer = require('mail.DocumentViewer');
 var Widget = require('web.Widget');
 
 var QWeb = core.qweb;
@@ -30,6 +32,8 @@ var Thread = Widget.extend({
         "click img": "on_click_redirect",
         "click strong": "on_click_redirect",
         "click .o_thread_show_more": "on_click_show_more",
+        "click .o_attachment_download": "_onAttachmentDownload",
+        "click .o_attachment_view": "_onAttachmentView",
         "click .o_thread_message_needaction": function (event) {
             var message_id = $(event.currentTarget).data('message-id');
             this.trigger("mark_as_read", message_id);
@@ -108,7 +112,10 @@ var Thread = Widget.extend({
             messages: msgs,
             options: options,
             ORDER: ORDER,
+            date_format: time.getLangDatetimeFormat(),
         }));
+
+        this.attachments = _.uniq(_.flatten(_.map(messages, 'attachment_ids')));
 
         _.each(msgs, function(msg) {
             var $msg = self.$('.o_thread_message[data-message-id="'+ msg.id +'"]');
@@ -125,11 +132,11 @@ var Thread = Widget.extend({
     },
 
     /**
-     *  Modifies $element to add the 'read more/read less' functionality
-     *  All element nodes with "data-o-mail-quote" attribute are concerned.
-     *  All text nodes after a ""#stopSpelling" element are concerned.
-     *  Those text nodes need to be wrapped in a span (toggle functionality).
-     *  All consecutive elements are joined in one 'read more/read less'.
+     * Modifies $element to add the 'read more/read less' functionality
+     * All element nodes with "data-o-mail-quote" attribute are concerned.
+     * All text nodes after a ``#stopSpelling`` element are concerned.
+     * Those text nodes need to be wrapped in a span (toggle functionality).
+     * All consecutive elements are joined in one 'read more/read less'.
      */
     insert_read_more: function ($element) {
         var self = this;
@@ -203,6 +210,10 @@ var Thread = Widget.extend({
         }
     },
     on_click_redirect: function (event) {
+        // ignore inherited branding
+        if ($(event.target).data('oe-field') !== undefined) {
+            return;
+        }
         var id = $(event.target).data('oe-id');
         if (id) {
             event.preventDefault();
@@ -299,6 +310,29 @@ var Thread = Widget.extend({
     },
     destroy: function () {
         clearInterval(this.update_timestamps_interval);
+    },
+
+    //--------------------------------------------------------------------------
+    // Handlers
+    //--------------------------------------------------------------------------
+
+    /**
+     * @private
+     * @param {MouseEvent} event
+     */
+    _onAttachmentDownload: function (event) {
+        event.stopPropagation();
+    },
+    /**
+     * @private
+     * @param {MouseEvent} event
+     */
+    _onAttachmentView: function (event) {
+        var activeAttachmentID = $(event.currentTarget).data('id');
+        if (activeAttachmentID) {
+            var attachmentViewer = new DocumentViewer(this, this.attachments, activeAttachmentID);
+            attachmentViewer.appendTo($('body'));
+        }
     },
 });
 

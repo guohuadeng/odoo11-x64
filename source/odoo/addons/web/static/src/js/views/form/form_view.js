@@ -27,8 +27,8 @@ var FormView = BasicView.extend({
 
         var mode = params.mode || (params.currentId ? 'readonly' : 'edit');
         this.loadParams.type = 'record';
-        this.loadParams.parentID = params.parentID;
 
+        this.controllerParams.disableAutofocus = params.disable_autofocus;
         this.controllerParams.hasSidebar = params.sidebar;
         this.controllerParams.toolbarActions = viewInfo.toolbar;
         this.controllerParams.footerToButtons = params.footer_to_buttons;
@@ -40,7 +40,6 @@ var FormView = BasicView.extend({
         this.controllerParams.mode = mode;
 
         this.rendererParams.mode = mode;
-        this.model = params.model;
     },
 
     //--------------------------------------------------------------------------

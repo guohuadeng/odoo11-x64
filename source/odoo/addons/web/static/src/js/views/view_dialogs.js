@@ -81,9 +81,9 @@ var FormViewDialog = ViewDialog.extend({
      * @param {Object} [options.fields_view] optional form fields_view
      * @param {boolean} [options.readonly=false] only applicable when not in
      *   creation mode
-     * @param {function} [options.on_save] callback to execute when clicking on
-     *   'Save' (form view's 'saveRecord' by default)
-     * @param {function} [options.on_saved] callback executed after on_save
+     * @param {function} [options.on_saved] callback executed after saving a
+     *   record.  It will be called with the record data, and a boolean which
+     *   indicates if something was changed
      * @param {BasicModel} [options.model] if given, it will be used instead of
      *  a new form view model
      * @param {string} [options.recordID] if given, the model has to be given as
@@ -214,24 +214,16 @@ var FormViewDialog = ViewDialog.extend({
 
     _save: function () {
         var self = this;
-        var def;
-        if (this.options.on_save) {
-            if (this.form_view.canBeSaved()) {
-                return $.Deferred().reject();
-            }
-            def = this.options.on_save(this.form_view.model.get(this.form_view.handle));
-        } else {
-            def = this.form_view.saveRecord(this.form_view.handle, {
+        return this.form_view.saveRecord(this.form_view.handle, {
                 stayInEdit: true,
                 reload: false,
                 savePoint: this.shouldSaveLocally,
                 viewType: 'form',
-            });
-        }
-        return $.when(def).then(function () {
+        }).then(function (changedFields) {
             // record might have been changed by the save (e.g. if this was a new record, it has an
             // id now), so don't re-use the copy obtained before the save
-            self.on_saved(self.form_view.model.get(self.form_view.handle));
+            var record = self.form_view.model.get(self.form_view.handle);
+            self.on_saved(record, !!changedFields.length);
         });
     },
 });
@@ -241,8 +233,11 @@ var SelectCreateListController = ListController.extend({
     // row of the list) such that it triggers up 'select_record' with its res_id.
     custom_events: _.extend({}, ListController.prototype.custom_events, {
         open_record: function (event) {
-            var selected_record = this.model.get(event.data.id);
-            this.trigger_up('select_record', {id: selected_record.res_id});
+            var selectedRecord = this.model.get(event.data.id);
+            this.trigger_up('select_record', {
+                id: selectedRecord.res_id,
+                display_name: selectedRecord.data.display_name,
+            });
         },
     }),
 });
@@ -254,7 +249,7 @@ var SelectCreateDialog = ViewDialog.extend({
     custom_events: _.extend({}, ViewDialog.prototype.custom_events, {
         select_record: function (event) {
             if (!this.options.readonly) {
-                this.on_selected([event.data.id]);
+                this.on_selected([event.data]);
                 this.close();
             }
         },
@@ -267,6 +262,7 @@ var SelectCreateDialog = ViewDialog.extend({
             var searchData = this._process_search_data(d.domains, d.contexts, d.groupbys);
             this.list_controller.reload(searchData);
         },
+        get_controller_context: '_onGetControllerContext',
     }),
 
     /**
@@ -350,6 +346,7 @@ var SelectCreateDialog = ViewDialog.extend({
                 groupBy: searchResult.groupBy,
                 modelName: self.dataset.model,
                 hasSelectors: !self.options.disable_multiple_selection,
+                readonly: true,
             }, self.options.list_view_options));
             listView.setController(SelectCreateListController);
             return listView.getController(self);
@@ -375,7 +372,14 @@ var SelectCreateDialog = ViewDialog.extend({
                     disabled: true,
                     close: true,
                     click: function () {
-                        self.on_selected(self.list_controller.getSelectedIds());
+                        var records = self.list_controller.getSelectedRecords();
+                        var values = _.map(records, function (record) {
+                            return {
+                                id: record.res_id,
+                                display_name: record.data.display_name,
+                            };
+                        });
+                        self.on_selected(values);
                     },
                 });
             }
@@ -391,7 +395,8 @@ var SelectCreateDialog = ViewDialog.extend({
         var results = pyeval.eval_domains_and_contexts({
             domains: [this.domain].concat(domains),
             contexts: [this.context].concat(contexts),
-            group_by_seq: groupbys || []
+            group_by_seq: groupbys || [],
+            eval_context: this.getSession().user_context,
         });
         var context = _.omit(results.context, function (value, key) { return key.indexOf('search_default_') === 0; });
         return {
@@ -404,10 +409,33 @@ var SelectCreateDialog = ViewDialog.extend({
         var self = this;
         var dialog = new FormViewDialog(this, _.extend({}, this.options, {
             on_saved: function (record) {
-                self.on_selected([record.res_id]);
+                var values = [{
+                    id: record.res_id,
+                    display_name: record.data.display_name,
+                }];
+                self.on_selected(values);
             },
         })).open();
         dialog.on('closed', this, this.close);
+        return dialog;
+    },
+
+    //--------------------------------------------------------------------------
+    // Handlers
+    //--------------------------------------------------------------------------
+
+    /**
+     * Handles a context request: provides to the caller the context of the
+     * list controller.
+     *
+     * @private
+     * @param {OdooEvent} ev
+     * @param {function} ev.data.callback used to send the requested context
+     */
+    _onGetControllerContext: function (ev) {
+        ev.stopPropagation();
+        var context = this.list_controller.getContext();
+        ev.data.callback(context);
     },
 });
 

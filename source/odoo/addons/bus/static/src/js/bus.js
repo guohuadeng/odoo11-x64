@@ -76,7 +76,8 @@ bus.Bus = Widget.extend({
             this.last_partners_presence_check = now;
         }
         var data = {channels: self.channels, last: self.last, options: options};
-        session.rpc('/longpolling/poll', data, {shadow : true}).then(function(result) {
+        // The backend has a maximum cycle time of 50 seconds so give +10 seconds
+        session.rpc('/longpolling/poll', data, {shadow : true, timeout: 60000}).then(function(result) {
             self.on_notification(result);
             if(!self.stop){
                 self.poll();
@@ -136,12 +137,13 @@ bus.Bus = Widget.extend({
  * one in the list of open tabs. This one start polling for the other. When a notification is recieved from the poll, it
  * is signaling through the localStorage too.
  *
- * localStorage used keys are :
- *      - bus.channels : shared public channel list to listen during the poll
- *      - bus.options : shared options
- *      - bus.notification : the received notifications from the last poll
- *      - bus.tab_list : list of opened tab ids
- *      - bus.tab_master : generated id of the master tab
+ * localStorage used keys are:
+ *
+ * - bus.channels : shared public channel list to listen during the poll
+ * - bus.options : shared options
+ * - bus.notification : the received notifications from the last poll
+ * - bus.tab_list : list of opened tab ids
+ * - bus.tab_master : generated id of the master tab
  */
 var CrossTabBus = bus.Bus.extend({
     init: function(){

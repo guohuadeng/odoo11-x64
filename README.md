@@ -47,7 +47,7 @@ https://www.python.org/downloads/windows/
 ```
 python3 .\extra\getpip.py
 ```
-## 对某些要编译的Python包，在此找  python-ldap, gevent, psutil ,Pillow==4.0.0,  reportlab==3.3.0
+## 对某些要编译的Python包，在此找
 ```
 http://www.lfd.uci.edu/~gohlke/pythonlibs/
 ```
@@ -70,3 +70,4 @@ npm install -g less less-plugin-clean-css
 ```
 runtime/nginx/nginx.conf
 ```
+## 安装结束

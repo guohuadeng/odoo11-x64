@@ -8,6 +8,8 @@ from odoo.tools.safe_eval import safe_eval, test_python_expr
 from odoo.tools import pycompat
 from odoo.http import request
 
+import base64
+from collections import defaultdict
 import datetime
 import dateutil
 import logging
@@ -29,6 +31,11 @@ class IrActions(models.Model):
     help = fields.Html(string='Action Description',
                        help='Optional help text for the users with a description of the target view, such as its usage and purpose.',
                        translate=True)
+    binding_model_id = fields.Many2one('ir.model', ondelete='cascade',
+                                       help="Setting a value makes this action available in the sidebar for the given model.")
+    binding_type = fields.Selection([('action', 'Action'),
+                                     ('report', 'Report')],
+                                    required=True, default='action')
 
     def _compute_xml_id(self):
         res = self.get_external_id()
@@ -38,15 +45,15 @@ class IrActions(models.Model):
     @api.model
     def create(self, vals):
         res = super(IrActions, self).create(vals)
-        # ir_values.get_actions() depends on action records
-        self.env['ir.values'].clear_caches()
+        # self.get_bindings() depends on action records
+        self.clear_caches()
         return res
 
     @api.multi
     def write(self, vals):
         res = super(IrActions, self).write(vals)
-        # ir_values.get_actions() depends on action records
-        self.env['ir.values'].clear_caches()
+        # self.get_bindings() depends on action records
+        self.clear_caches()
         return res
 
     @api.multi
@@ -56,8 +63,8 @@ class IrActions(models.Model):
         todos = self.env['ir.actions.todo'].search([('action_id', 'in', self.ids)])
         todos.unlink()
         res = super(IrActions, self).unlink()
-        # ir_values.get_actions() depends on action records
-        self.env['ir.values'].clear_caches()
+        # self.get_bindings() depends on action records
+        self.clear_caches()
         return res
 
     @api.model
@@ -70,7 +77,41 @@ class IrActions(models.Model):
             'datetime': datetime,
             'dateutil': dateutil,
             'timezone': timezone,
+            'b64encode': base64.b64encode,
+            'b64decode': base64.b64decode,
         }
+
+    @api.model
+    @tools.ormcache('frozenset(self.env.user.groups_id.ids)', 'model_name')
+    def get_bindings(self, model_name):
+        """ Retrieve the list of actions bound to the given model.
+
+           :return: a dict mapping binding types to a list of dict describing
+                    actions, where the latter is given by calling the method
+                    ``read`` on the action record.
+        """
+        cr = self.env.cr
+        query = """ SELECT a.id, a.type, a.binding_type
+                    FROM ir_actions a, ir_model m
+                    WHERE a.binding_model_id=m.id AND m.model=%s
+                    ORDER BY a.id """
+        cr.execute(query, [model_name])
+
+        # discard unauthorized actions, and read action definitions
+        result = defaultdict(list)
+        user_groups = self.env.user.groups_id
+        for action_id, action_model, binding_type in cr.fetchall():
+            try:
+                action = self.env[action_model].browse(action_id)
+                action_groups = getattr(action, 'groups_id', ())
+                if action_groups and not action_groups & user_groups:
+                    # the user may not perform this action
+                    continue
+                result[binding_type].append(action.read()[0])
+            except (AccessError, MissingError):
+                continue
+
+        return result
 
 
 class IrActionsActWindow(models.Model):
@@ -190,7 +231,8 @@ class IrActionsActWindow(models.Model):
         if len(existing) < len(self):
             # mark missing records in cache with a failed value
             exc = MissingError(_("Record does not exist or has been deleted."))
-            (self - existing)._cache.update(fields.FailedValue(exc))
+            for record in (self - existing):
+                record._cache.set_failed(self._fields, exc)
         return existing
 
     @api.model
@@ -214,7 +256,7 @@ class IrActionsActWindowView(models.Model):
     _name = 'ir.actions.act_window.view'
     _table = 'ir_act_window_view'
     _rec_name = 'view_id'
-    _order = 'sequence'
+    _order = 'sequence,id'
 
     sequence = fields.Integer()
     view_id = fields.Many2one('ir.ui.view', string='View')
@@ -280,12 +322,12 @@ class IrActionsServer(models.Model):
     _order = 'sequence,name'
 
     DEFAULT_PYTHON_CODE = """# Available variables:
-#  - time, datetime, dateutil, timezone: Python libraries
-#  - env: Odoo Environement
+#  - env: Odoo Environment on which the action is triggered
 #  - model: Odoo Model of the record on which the action is triggered; is a void recordset
-#  - record: record set of the current record on which the action is triggered; may be be void
-#  - records: record set of all records on which the action is triggered; may be void
-#  - log : log(message), function to log debug information in logging table
+#  - record: record on which the action is triggered; may be be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
 #  - Warning: Warning Exception to use with raise
 # To return an action, assign: action = {...}\n\n\n\n"""
 
@@ -320,9 +362,6 @@ class IrActionsServer(models.Model):
     model_id = fields.Many2one('ir.model', string='Model', required=True, ondelete='cascade',
                                help="Model on which the server action runs.")
     model_name = fields.Char(related='model_id.model', readonly=True, store=True)
-    menu_ir_values_id = fields.Many2one('ir.values', string='Action on Object',
-                                        copy=False, readonly=True,
-                                        help='IrValues entry of the related more menu entry action')
     # Python code
     code = fields.Text(string='Python Code', groups='base.group_system',
                        default=DEFAULT_PYTHON_CODE,
@@ -336,7 +375,7 @@ class IrActionsServer(models.Model):
                                     oldname='srcmodel_id', help="Model for record creation / update. Set this field only to specify a different model than the base model.")
     crud_model_name = fields.Char(related='crud_model_id.name', readonly=True)
     link_field_id = fields.Many2one('ir.model.fields', string='Link using field',
-                                    help="Provide the field used to link the newly created record"
+                                    help="Provide the field used to link the newly created record "
                                          "on the record on used by the server action.")
     fields_lines = fields.One2many('ir.server.object.lines', 'server_id', string='Value Mapping', copy=True)
 
@@ -365,25 +404,15 @@ class IrActionsServer(models.Model):
     def create_action(self):
         """ Create a contextual action for each server action. """
         for action in self:
-            ir_values = self.env['ir.values'].sudo().create({
-                'name': _('Run %s') % action.name,
-                'model': action.model_id.model,
-                'key2': 'client_action_multi',
-                'value': "ir.actions.server,%s" % action.id,
-            })
-            action.write({'menu_ir_values_id': ir_values.id})
+            action.write({'binding_model_id': action.model_id.id,
+                          'binding_type': 'action'})
         return True
 
     @api.multi
     def unlink_action(self):
         """ Remove the contextual actions created for the server actions. """
         self.check_access_rights('write', raise_exception=True)
-        for action in self:
-            if action.menu_ir_values_id:
-                try:
-                    action.menu_ir_values_id.sudo().unlink()
-                except Exception:
-                    raise UserError(_('Deletion of the action record failed.'))
+        self.filtered('binding_model_id').write({'binding_model_id': False})
         return True
 
     @api.model
@@ -416,7 +445,12 @@ class IrActionsServer(models.Model):
         for exp in action.fields_lines:
             res[exp.col1.name] = exp.eval_value(eval_context=eval_context)[exp.id]
 
-        self.env[action.model_id.model].browse(self._context.get('active_id')).write(res)
+        if self._context.get('onchange_self'):
+            record_cached = self._context['onchange_self']
+            for field, new_value in res.items():
+                record_cached[field] = new_value
+        else:
+            self.env[action.model_id.model].browse(self._context.get('active_id')).write(res)
 
     @api.model
     def run_action_object_create(self, action, eval_context=None):
@@ -511,6 +545,8 @@ class IrActionsServer(models.Model):
 
             elif hasattr(self, 'run_action_%s' % action.state):
                 active_id = self._context.get('active_id')
+                if not active_id and self._context.get('onchange_self'):
+                    active_id = self._context['onchange_self']._origin.id
                 active_ids = self._context.get('active_ids', [active_id] if active_id else [])
                 for active_id in active_ids:
                     # run context dedicated to a particular active_id
@@ -576,18 +612,19 @@ class IrActionsTodo(models.Model):
     def create(self, vals):
         todo = super(IrActionsTodo, self).create(vals)
         if todo.state == "open":
-            todo.ensure_one_open_todo()
+            self.ensure_one_open_todo()
         return todo
 
+    @api.multi
     def write(self, vals):
         res = super(IrActionsTodo, self).write(vals)
         if vals.get('state', '') == 'open':
-            for todo in self:
-                todo.ensure_one_open_todo()
+            self.ensure_one_open_todo()
         return res
 
+    @api.model
     def ensure_one_open_todo(self):
-        open_todo = self.search(['&', ('state', '=', 'open'), ('id', '!=', self.id)])
+        open_todo = self.search([('state', '=', 'open')], order='sequence asc, id desc', offset=1)
         if open_todo:
             open_todo.write({'state': 'done'})
 
@@ -668,7 +705,7 @@ class IrActionsActClient(models.Model):
     res_model = fields.Char(string='Destination Model', help="Optional model, mostly used for needactions.")
     context = fields.Char(string='Context Value', default="{}", required=True, help="Context dictionary as Python expression, empty by default (Default: {})")
     params = fields.Binary(compute='_compute_params', inverse='_inverse_params', string='Supplementary arguments',
-                           help="Arguments sent to the client along with"
+                           help="Arguments sent to the client along with "
                                 "the view tag")
     params_store = fields.Binary(string='Params storage', readonly=True)
 

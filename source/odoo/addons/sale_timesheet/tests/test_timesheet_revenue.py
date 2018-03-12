@@ -2,7 +2,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.addons.sale.tests.test_sale_common import TestSale
-from odoo.tools import float_compare
+from odoo.exceptions import UserError
+from odoo.tools import float_repr
 
 
 class TestSaleTimesheet(TestSale):
@@ -20,7 +21,6 @@ class TestSaleTimesheet(TestSale):
         self.project = self.env['project.project'].create({
             'name': 'Project for my timesheets',
             'allow_timesheets': True,
-            'use_tasks': True,
         })
 
         # create service products
@@ -33,8 +33,9 @@ class TestSaleTimesheet(TestSale):
             'uom_id': self.env.ref('product.product_uom_hour').id,
             'uom_po_id': self.env.ref('product.product_uom_hour').id,
             'default_code': 'SERV-DELI',
-            'track_service': 'task',
-            'project_id': self.project.id
+            'service_type': 'timesheet',
+            'service_tracking': 'task_global_project',
+            'project_id': self.project.id,
         })
 
         self.product_order = self.env['product.product'].create({
@@ -46,8 +47,9 @@ class TestSaleTimesheet(TestSale):
             'uom_id': self.env.ref('product.product_uom_hour').id,
             'uom_po_id': self.env.ref('product.product_uom_hour').id,
             'default_code': 'SERV-ORDER',
-            'track_service': 'task',
-            'project_id': self.project.id
+            'service_type': 'timesheet',
+            'service_tracking': 'task_global_project',
+            'project_id': self.project.id,
         })
 
         # pricelists
@@ -63,7 +65,6 @@ class TestSaleTimesheet(TestSale):
             'currency_id': self.env.ref('base.EUR').id,
             'company_id': self.env.user.company_id.id,
         })
-
         # partners
         self.partner_usd = self.env['res.partner'].create({
             'name': 'Cool Partner in USD',
@@ -187,6 +188,21 @@ class TestSaleTimesheet(TestSale):
         self.assertEquals(timesheet2.timesheet_invoice_id, invoice)
         self.assertEquals(timesheet3.timesheet_invoice_id, invoice)
 
+        # check that analytic line for product 'delivery' cannot be altered
+        with self.assertRaises(UserError):
+            timesheet1.write(dict(unit_amount=10))
+        self.assertNotEquals(timesheet1.unit_amount, 10)
+
+        # check that analytic line for product 'ordered' can be altered
+        timesheet3.write(dict(unit_amount=10))
+        self.assertEquals(timesheet3.unit_amount, 10)
+
+        # check that if at least 1 analytic line is for product 'delivery', it cannot be altered
+        with self.assertRaises(UserError):
+            (timesheet1 + timesheet3).write(dict(unit_amount=15))
+        self.assertNotEquals(timesheet1.unit_amount, 15)
+        self.assertNotEquals(timesheet3.unit_amount, 15)
+
     def test_revenue_multi_currency(self):
         """ Create a SO with 2 lines : one for a delivered service, one for a ordered service. Confirm
             and invoice it. For this, we use a partner having a DIFFERENT currency from the current company.
@@ -283,10 +299,10 @@ class TestSaleTimesheet(TestSale):
         invoice.action_invoice_open()
 
         # check concrete revenue
-        self.assertEquals(float_compare(timesheet1.timesheet_revenue, 385.85, precision_digits=2), 0, "Revenue computation on invoice validation does not return the correct revenue !")
-        self.assertEquals(float_compare(timesheet2.timesheet_revenue, 154.35, precision_digits=2), 0, "Revenue computation on invoice validation does not return the correct revenue !")
-        self.assertEquals(float_compare(timesheet3.timesheet_revenue, 114.5, precision_digits=2), 0, "Revenue computation on invoice validation does not return the correct revenue !")
-        self.assertEquals(float_compare(timesheet4.timesheet_revenue, 152.68, precision_digits=2), 0, "Revenue computation on invoice validation does not return the correct revenue !")
+        self.assertEquals(float_repr(timesheet1.timesheet_revenue, precision_digits=2), '385.85', "Revenue computation on invoice validation does not return the correct revenue !")
+        self.assertEquals(float_repr(timesheet2.timesheet_revenue, precision_digits=2), '154.35', "Revenue computation on invoice validation does not return the correct revenue !")
+        self.assertEquals(float_repr(timesheet3.timesheet_revenue, precision_digits=2), '114.50', "Revenue computation on invoice validation does not return the correct revenue !")
+        self.assertEquals(float_repr(timesheet4.timesheet_revenue, precision_digits=2), '152.68', "Revenue computation on invoice validation does not return the correct revenue !")
 
         # check the invoice is well set
         self.assertEquals(timesheet1.timesheet_invoice_id, invoice)

@@ -83,6 +83,24 @@ def get_records_pager(ids, current):
     return {}
 
 
+def _build_url_w_params(url_string, query_params, remove_duplicates=True):
+    """ Rebuild a string url based on url_string and correctly compute query parameters
+    using those present in the url and those given by query_params. Having duplicates in
+    the final url is optional. For example:
+
+     * url_string = '/my?foo=bar&error=pay'
+     * query_params = {'foo': 'bar2', 'alice': 'bob'}
+     * if remove duplicates: result = '/my?foo=bar2&error=pay&alice=bob'
+     * else: result = '/my?foo=bar&foo=bar2&error=pay&alice=bob'
+    """
+    url = urls.url_parse(url_string)
+    url_params = url.decode_query()
+    if remove_duplicates:  # convert to standard dict instead of werkzeug multidict to remove duplicates automatically
+        url_params = url_params.to_dict()
+    url_params.update(query_params)
+    return url.replace(query=urls.url_encode(url_params)).to_url()
+
+
 class CustomerPortal(Controller):
 
     MANDATORY_BILLING_FIELDS = ["name", "phone", "email", "street", "city", "country_id"]
@@ -129,11 +147,12 @@ class CustomerPortal(Controller):
 
     @route(['/my/account'], type='http', auth='user', website=True)
     def account(self, redirect=None, **post):
+        values = self._prepare_portal_layout_values()
         partner = request.env.user.partner_id
-        values = {
+        values.update({
             'error': {},
-            'error_message': []
-        }
+            'error_message': [],
+        })
 
         if post:
             error, error_message = self.details_form_validate(post)
@@ -181,6 +200,8 @@ class CustomerPortal(Controller):
         # vat validation
         partner = request.env["res.partner"]
         if data.get("vat") and hasattr(partner, "check_vat"):
+            if data.get("country_id"):
+                data["vat"] = request.env["res.partner"].fix_eu_vat_number(int(data.get("country_id")), data.get("vat"))
             partner_dummy = partner.new({
                 'vat': data['vat'],
                 'country_id': (int(data['country_id'])
@@ -192,7 +213,7 @@ class CustomerPortal(Controller):
                 error["vat"] = 'error'
 
         # error message for empty required fields
-        if [err for err in tools.pycompat.values(error) if err == 'missing']:
+        if [err for err in error.values() if err == 'missing']:
             error_message.append(_('Some required fields are empty.'))
 
         unknown = [k for k in data if k not in self.MANDATORY_BILLING_FIELDS + self.OPTIONAL_BILLING_FIELDS]

@@ -9,12 +9,15 @@ from dateutil.relativedelta import relativedelta
 from odoo import fields, http, _
 from odoo.addons.http_routing.models.ir_http import slug
 from odoo.http import request
-from odoo.tools import pycompat
 
 
 class WebsiteEventController(http.Controller):
 
-    @http.route(['/event', '/event/page/<int:page>', '/events', '/events/page/<int:page>'], type='http', auth="public", website=True)
+    def sitemap_event(env, rule, qs):
+        if not qs or qs.lower() in '/events':
+            yield {'loc': '/events'}
+
+    @http.route(['/event', '/event/page/<int:page>', '/events', '/events/page/<int:page>'], type='http', auth="public", website=True, sitemap=sitemap_event)
     def events(self, page=1, **searches):
         Event = request.env['event.event']
         EventType = request.env['event.type']
@@ -80,7 +83,7 @@ class WebsiteEventController(http.Controller):
 
         def dom_without(without):
             domain = [('state', "in", ['draft', 'confirm', 'done'])]
-            for key, search in pycompat.items(domain_search):
+            for key, search in domain_search.items():
                 if key != without:
                     domain += search
             return domain
@@ -134,7 +137,7 @@ class WebsiteEventController(http.Controller):
 
         return request.render("website_event.index", values)
 
-    @http.route(['/event/<model("event.event"):event>/page/<path:page>'], type='http', auth="public", website=True)
+    @http.route(['/event/<model("event.event"):event>/page/<path:page>'], type='http', auth="public", website=True, sitemap=False)
     def event_page(self, event, page, **post):
         values = {
             'event': event,
@@ -150,7 +153,7 @@ class WebsiteEventController(http.Controller):
             # page not found
             values['path'] = re.sub(r"^website_event\.", '', page)
             values['from_template'] = 'website_event.default_page'  # .strip('website_event.')
-            page = 'website.page_404'
+            page = 'website.%s' % (request.website.is_publisher() and 'page_404' or '404')
 
         return request.render(page, values)
 
@@ -164,7 +167,7 @@ class WebsiteEventController(http.Controller):
             target_url += '?enable_editor=1'
         return request.redirect(target_url)
 
-    @http.route(['/event/<model("event.event"):event>/register'], type='http', auth="public", website=True)
+    @http.route(['/event/<model("event.event"):event>/register'], type='http', auth="public", website=True, sitemap=False)
     def event_register(self, event, **post):
         values = {
             'event': event,
@@ -174,10 +177,10 @@ class WebsiteEventController(http.Controller):
         }
         return request.render("website_event.event_description_full", values)
 
-    @http.route('/event/add_event', type='http', auth="user", methods=['POST'], website=True)
+    @http.route('/event/add_event', type='json', auth="user", methods=['POST'], website=True)
     def add_event(self, event_name="New Event", **kwargs):
         event = self._add_event(event_name, request.context)
-        return request.redirect("/event/%s/register?enable_editor=1" % slug(event))
+        return "/event/%s/register?enable_editor=1" % slug(event)
 
     def _add_event(self, event_name=None, context=None, **kwargs):
         if not event_name:
@@ -194,10 +197,10 @@ class WebsiteEventController(http.Controller):
     def get_formated_date(self, event):
         start_date = fields.Datetime.from_string(event.date_begin).date()
         end_date = fields.Datetime.from_string(event.date_end).date()
-        month = babel.dates.get_month_names('abbreviated', locale=event.env.context.get('lang', 'en_US'))[start_date.month]
+        month = babel.dates.get_month_names('abbreviated', locale=event.env.context.get('lang') or 'en_US')[start_date.month]
         return ('%s %s%s') % (month, start_date.strftime("%e"), (end_date != start_date and ("-" + end_date.strftime("%e")) or ""))
 
-    @http.route('/event/get_country_event_list', type='http', auth='public', website=True)
+    @http.route('/event/get_country_event_list', type='json', auth='public', website=True)
     def get_country_events(self, **post):
         Event = request.env['event.event']
         country_code = request.session['geoip'].get('country_code')
@@ -215,7 +218,7 @@ class WebsiteEventController(http.Controller):
                 "date": self.get_formated_date(event),
                 "event": event,
                 "url": event.website_url})
-        return request.render("website_event.country_events_list", result)
+        return request.env['ir.ui.view'].render_template("website_event.country_events_list", result)
 
     def _process_tickets_details(self, data):
         nb_register = int(data.get('nb_register-0', 0))
@@ -234,16 +237,16 @@ class WebsiteEventController(http.Controller):
         ''' Process data posted from the attendee details form. '''
         registrations = {}
         global_values = {}
-        for key, value in pycompat.items(details):
+        for key, value in details.items():
             counter, field_name = key.split('-', 1)
             if counter == '0':
                 global_values[field_name] = value
             else:
                 registrations.setdefault(counter, dict())[field_name] = value
-        for key, value in pycompat.items(global_values):
-            for registration in pycompat.values(registrations):
+        for key, value in global_values.items():
+            for registration in registrations.values():
                 registration[key] = value
-        return list(pycompat.values(registrations))
+        return list(registrations.values())
 
     @http.route(['/event/<model("event.event"):event>/registration/confirm'], type='http', auth="public", methods=['POST'], website=True)
     def registration_confirm(self, event, **post):

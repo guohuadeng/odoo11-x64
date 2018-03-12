@@ -108,7 +108,7 @@
                     <div class="alert alert-info">
                         <span>If you are a developer <strong>you can use our
                         API</strong> to load data automatically through
-                        scripts: take a look at our <a href="https://www.odoo.com/documentation/9.0/api_integration.html" target="_blank">API Documentation</a> for more
+                        scripts: take a look at our <a href="https://www.odoo.com/documentation/11.0/webservices/odoo.html" target="_blank">API Documentation</a> for more
                         information.</span>
                     </div>
                 </t>
@@ -363,7 +363,7 @@
                 <t t-set="menu_categoryclasses" t-value="'fa-recycle'"/>
                 <t t-call="web_planner.page">
                     <t t-set="page_title">Reordering Rules</t>
-                    <t t-set="page_menutitle" t-value="'Reordering Rules'"/>
+                    <t t-set="page_menutitle">Reordering Rules</t>
                     <p class="text-muted">
                         A good inventory management aims to optimize stock levels: not too low (or
                         you may find yourself out of stock) and not too high (your products occupy

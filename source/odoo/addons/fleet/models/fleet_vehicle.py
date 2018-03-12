@@ -21,7 +21,7 @@ class FleetVehicle(models.Model):
     company_id = fields.Many2one('res.company', 'Company')
     license_plate = fields.Char(required=True, help='License plate number of the vehicle (i = plate number for a car)')
     vin_sn = fields.Char('Chassis Number', help='Unique number written on the vehicle motor (VIN/SN number)', copy=False)
-    driver_id = fields.Many2one('res.partner', 'Driver', help='Driver of the vehicle')
+    driver_id = fields.Many2one('res.partner', 'Driver', help='Driver of the vehicle', copy=False)
     model_id = fields.Many2one('fleet.vehicle.model', 'Model', required=True, help='Model of the vehicle')
     log_fuel = fields.One2many('fleet.vehicle.log.fuel', 'vehicle_id', 'Fuel Logs')
     log_services = fields.One2many('fleet.vehicle.log.services', 'vehicle_id', 'Services Logs')
@@ -247,9 +247,11 @@ class FleetVehicle(models.Model):
             @return: the costs log view
         """
         self.ensure_one()
+        copy_context = dict(self.env.context)
+        copy_context.pop('group_by', None)
         res = self.env['ir.actions.act_window'].for_xml_id('fleet', 'fleet_vehicle_costs_action')
         res.update(
-            context=dict(self.env.context, default_vehicle_id=self.id, search_default_parent_false=True),
+            context=dict(copy_context, default_vehicle_id=self.id, search_default_parent_false=True),
             domain=[('vehicle_id', '=', self.id)]
         )
         return res
@@ -275,7 +277,7 @@ class FleetVehicleOdometer(models.Model):
                 name = record.date
             elif record.date:
                 name += ' / ' + record.date
-            self.name = name
+            record.name = name
 
     @api.onchange('vehicle_id')
     def _onchange_vehicle(self):
@@ -310,4 +312,4 @@ class FleetServiceType(models.Model):
     category = fields.Selection([
         ('contract', 'Contract'),
         ('service', 'Service')
-        ], 'Category', required=True, help='Choose wheter the service refer to contracts, vehicle services or both')
+        ], 'Category', required=True, help='Choose whether the service refer to contracts, vehicle services or both')

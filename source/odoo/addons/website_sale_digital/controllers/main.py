@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import base64
-from cStringIO import StringIO
+import io
 from werkzeug.utils import redirect
 
 from odoo import http
@@ -29,8 +29,8 @@ class WebsiteSaleDigital(CustomerPortal):
     @http.route([
         '/my/orders/<int:order>',
     ], type='http', auth='user', website=True)
-    def orders_followup(self, order=None, **post):
-        response = super(WebsiteSaleDigital, self).orders_followup(order=order, **post)
+    def portal_order_page(self, order=None, **post):
+        response = super(WebsiteSaleDigital, self).portal_order_page(order=order, **post)
         if not 'order' in response.qcontext:
             return response
         order = response.qcontext['order']
@@ -100,7 +100,7 @@ class WebsiteSaleDigital(CustomerPortal):
             else:
                 return request.not_found()
         elif attachment["datas"]:
-            data = StringIO(base64.standard_b64decode(attachment["datas"]))
+            data = io.BytesIO(base64.standard_b64decode(attachment["datas"]))
             return http.send_file(data, filename=attachment['name'], as_attachment=True)
         else:
             return request.not_found()

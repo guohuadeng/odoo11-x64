@@ -12,7 +12,6 @@ ofxparse
 passlib
 pillow
 psutil
-psycogreen
 psycopg2 >= 2.2
 pydot
 pyldap
@@ -20,7 +19,6 @@ pyparsing
 pypdf2
 pyserial
 python-dateutil
-python-openid
 pytz
 pyusb >= 1.0.0b1
 pyyaml

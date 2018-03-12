@@ -10,7 +10,6 @@ import mimetypes
 import os
 import re
 import sys
-import unicodedata
 
 import werkzeug
 import werkzeug.exceptions
@@ -22,7 +21,7 @@ import odoo
 from odoo import api, http, models, tools, SUPERUSER_ID
 from odoo.exceptions import AccessDenied, AccessError
 from odoo.http import request, STATIC_CACHE, content_disposition
-from odoo.tools import pycompat
+from odoo.tools import pycompat, consteq
 from odoo.tools.mimetypes import guess_mimetype
 from odoo.modules.module import get_resource_path, get_module_path
 
@@ -131,7 +130,7 @@ class IrHttp(models.AbstractModel):
         attach = env['ir.attachment'].search_read(domain, fields)
         if attach:
             wdate = attach[0]['__last_update']
-            datas = attach[0]['datas'] or ''
+            datas = attach[0]['datas'] or b''
             name = attach[0]['name']
             checksum = attach[0]['checksum'] or hashlib.sha1(datas).hexdigest()
 
@@ -154,8 +153,16 @@ class IrHttp(models.AbstractModel):
                 return response
 
             response.mimetype = attach[0]['mimetype'] or 'application/octet-stream'
-            response.data = datas.decode('base64')
+            response.data = base64.b64decode(datas)
             return response
+
+    @classmethod
+    def _serve_fallback(cls, exception):
+        # serve attachment
+        attach = cls._serve_attachment()
+        if attach:
+            return attach
+        return False
 
     @classmethod
     def _handle_exception(cls, exception):
@@ -164,9 +171,9 @@ class IrHttp(models.AbstractModel):
         # This is done first as the attachment path may
         # not match any HTTP controller
         if isinstance(exception, werkzeug.exceptions.HTTPException) and exception.code == 404:
-            attach = cls._serve_attachment()
-            if attach:
-                return attach
+            serve = cls._serve_fallback(exception)
+            if serve:
+                return serve
 
         # Don't handle exception but use werkeug debugger if server in --dev mode
         if 'werkzeug' in tools.config['dev_mode']:
@@ -209,7 +216,7 @@ class IrHttp(models.AbstractModel):
     @classmethod
     def _postprocess_args(cls, arguments, rule):
         """ post process arg to set uid on browse records """
-        for key, val in list(pycompat.items(arguments)):
+        for key, val in list(arguments.items()):
             # Replace uid placeholder by the current request.uid
             if isinstance(val, models.BaseModel) and isinstance(val._uid, RequestUID):
                 arguments[key] = val.sudo(request.uid)
@@ -221,7 +228,7 @@ class IrHttp(models.AbstractModel):
         if not hasattr(cls, '_routing_map'):
             _logger.info("Generating routing map")
             installed = request.registry._init_modules - {'web'}
-            if tools.config['test_enable']:
+            if tools.config['test_enable'] and odoo.modules.module.current_test:
                 installed.add(odoo.modules.module.current_test)
             mods = [''] + odoo.conf.server_wide_modules + sorted(installed)
             # Note : when routing map is generated, we put it on the class `cls`
@@ -241,7 +248,10 @@ class IrHttp(models.AbstractModel):
         return content_disposition(filename)
 
     @classmethod
-    def binary_content(cls, xmlid=None, model='ir.attachment', id=None, field='datas', unique=False, filename=None, filename_field='datas_fname', download=False, mimetype=None, default_mimetype='application/octet-stream', env=None):
+    def binary_content(cls, xmlid=None, model='ir.attachment', id=None, field='datas',
+                       unique=False, filename=None, filename_field='datas_fname', download=False,
+                       mimetype=None, default_mimetype='application/octet-stream',
+                       access_token=None, env=None):
         """ Get file, attachment or downloadable content
 
         If the ``xmlid`` and ``id`` parameter is omitted, fetches the default value for the
@@ -258,6 +268,8 @@ class IrHttp(models.AbstractModel):
         :param bool download: apply headers to download the file
         :param str mimetype: mintype of the field (for headers)
         :param str default_mimetype: default mintype if no mintype found
+        :param str access_token: optional token for unauthenticated access
+                                 only available  for ir.attachment
         :param Environment env: by default use request.env
         :returns: (status, headers, content)
         """
@@ -266,6 +278,10 @@ class IrHttp(models.AbstractModel):
         obj = None
         if xmlid:
             obj = env.ref(xmlid, False)
+        elif id and model == 'ir.attachment' and access_token:
+            obj = env[model].sudo().browse(int(id))
+            if not consteq(obj.access_token, access_token):
+                return (403, [], None)
         elif id and model in env.registry:
             obj = env[model].browse(int(id))
 
@@ -295,7 +311,7 @@ class IrHttp(models.AbstractModel):
                     if module_resource_path.startswith(module_path):
                         with open(module_resource_path, 'rb') as f:
                             content = base64.b64encode(f.read())
-                        last_update = str(os.path.getmtime(module_resource_path))
+                        last_update = pycompat.text_type(os.path.getmtime(module_resource_path))
 
             if not module_resource_path:
                 module_resource_path = obj.url
@@ -331,7 +347,7 @@ class IrHttp(models.AbstractModel):
 
         # cache
         etag = bool(request) and request.httprequest.headers.get('If-None-Match')
-        retag = '"%s"' % hashlib.md5(last_update).hexdigest()
+        retag = '"%s"' % hashlib.md5(pycompat.to_text(content).encode('utf-8')).hexdigest()
         status = status or (304 if etag == retag else 200)
         headers.append(('ETag', retag))
         headers.append(('Cache-Control', 'max-age=%s' % (STATIC_CACHE if unique else 0)))

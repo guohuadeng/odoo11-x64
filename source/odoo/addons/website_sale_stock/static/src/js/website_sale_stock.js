@@ -1,6 +1,7 @@
 odoo.define('website_sale_stock.website_sale', function(require) {
 'use strict';
 
+require('web.dom_ready');
 var base = require('web_editor.base');
 var ajax = require('web.ajax');
 var core = require('web.core');
@@ -31,13 +32,17 @@ $('.oe_website_sale').each(function() {
         }
     });
 
-    /* Renders a specific message concerning the stock of the product 
+
+    /* Renders a specific message concerning the stock of the product
         and its variants on the product website page.
     */
     $(oe_website_sale).on('change', 'ul[data-attribute_value_ids]', function(event) {
         var $ul = $(event.target).closest('.js_add_cart_variants');
         var $parent = $ul.closest('.js_product');
-        var variant_ids = JSON.parse($ul.data("attribute_value_ids").replace(/'/g, '"'));
+        var variant_ids = $ul.data("attribute_value_ids");
+        if(_.isString(variant_ids)) {
+            variant_ids = JSON.parse(variant_ids.replace(/'/g, '"'));
+        }
         var values = [];
         $parent.find('input.js_variant_change:checked, select.js_variant_change').each(function() {
             values.push(+$(this).val());
@@ -45,9 +50,13 @@ $('.oe_website_sale').each(function() {
         var qty = $parent.find('input[name="add_qty"]').val();
         for (var k in variant_ids) {
             if (_.isEmpty(_.difference(variant_ids[k][1], values))) {
-                var info = variant_ids[k][4];
+                // clone so permanent object is not modified
+                var info = _.clone(variant_ids[k][4]);
                 if(_.contains(['always', 'threshold'], info['inventory_availability'])) {
                     info['virtual_available'] -= parseInt(info['cart_qty']);
+                    if (info['virtual_available'] < 0) {
+                        info['virtual_available'] = 0;
+                    }
                     // Handle case when manually write in input
                     if(qty > info['virtual_available']) {
                         $parent.find('input[name="add_qty"]').val(info['virtual_available'] || 1);
@@ -61,7 +70,7 @@ $('.oe_website_sale').each(function() {
                 xml_load.then(function() {
                     $(oe_website_sale).find('.availability_message_' + info['product_template']).remove();
                     var $message = $(QWeb.render('website_sale_stock.product_availability', info));
-                    $message.insertAfter($parent);
+                    $('div.availability_messages').html($message);
                 });
             }
         }

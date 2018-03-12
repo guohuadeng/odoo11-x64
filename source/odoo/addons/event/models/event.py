@@ -5,7 +5,6 @@ import pytz
 from odoo import _, api, fields, models
 from odoo.addons.mail.models.mail_template import format_tz
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tools import pycompat
 from odoo.tools.translate import html_translate
 
 from dateutil.relativedelta import relativedelta
@@ -45,7 +44,7 @@ class EventType(models.Model):
         help="It will select this default maximum value when you choose this event")
     auto_confirm = fields.Boolean(
         'Automatically Confirm Registrations', default=True,
-        help="Events and registrations will automatically be confirmed"
+        help="Events and registrations will automatically be confirmed "
              "upon creation, easing the flow for simple events.")
     # location
     is_online = fields.Boolean(
@@ -209,7 +208,7 @@ class EventEvent(models.Model):
     @api.depends('date_tz', 'date_begin')
     def _compute_date_begin_tz(self):
         if self.date_begin:
-            self.date_begin_located = format_tz(self.with_context({'use_babel': True}).env, self.date_begin, tz=self.date_tz)
+            self.date_begin_located = format_tz(self.with_context(use_babel=True).env, self.date_begin, tz=self.date_tz)
         else:
             self.date_begin_located = False
 
@@ -217,7 +216,7 @@ class EventEvent(models.Model):
     @api.depends('date_tz', 'date_end')
     def _compute_date_end_tz(self):
         if self.date_end:
-            self.date_end_located = format_tz(self.with_context({'use_babel': True}).env, self.date_end, tz=self.date_tz)
+            self.date_end_located = format_tz(self.with_context(use_babel=True).env, self.date_end, tz=self.date_tz)
         else:
             self.date_end_located = False
 
@@ -292,6 +291,12 @@ class EventEvent(models.Model):
             self.message_subscribe([vals['organizer_id']])
         return res
 
+    @api.multi
+    def copy(self, default=None):
+        self.ensure_one()
+        default = dict(default or {}, name=_("%s (copy)") % (self.name))
+        return super(EventEvent, self).copy(default)
+
     @api.one
     def button_draft(self):
         self.state = 'draft'
@@ -312,7 +317,7 @@ class EventEvent(models.Model):
         self.state = 'confirm'
 
     @api.one
-    def mail_attendees(self, template_id, force_send=False, filter_func=lambda self: True):
+    def mail_attendees(self, template_id, force_send=False, filter_func=lambda self: self.state != 'cancel'):
         for attendee in self.registration_ids.filtered(filter_func):
             self.env['mail.template'].browse(template_id).send_mail(attendee.id, force_send=force_send)
 
@@ -320,12 +325,12 @@ class EventEvent(models.Model):
     def _is_event_registrable(self):
         return True
 
+
 class EventRegistration(models.Model):
     _name = 'event.registration'
     _description = 'Attendee'
     _inherit = ['mail.thread']
     _order = 'name, create_date desc'
-    _mail_mass_mailing = _('Event Attendees')
 
     origin = fields.Char(
         string='Source Document', readonly=True,
@@ -389,7 +394,7 @@ class EventRegistration(models.Model):
             'partner_id': partner_id.id,
             'event_id': event_id and event_id.id or False,
         }
-        data.update({key: value for key, value in pycompat.items(registration) if key in self._fields})
+        data.update({key: value for key, value in registration.items() if key in self._fields})
         return data
 
     @api.one
@@ -502,3 +507,8 @@ class EventRegistration(models.Model):
             return _('next month')
         else:
             return _('on ') + format_tz(self.with_context({'use_babel': True}).env, self.event_begin_date, tz=self.event_id.date_tz or 'UTC')
+
+    @api.multi
+    def summary(self):
+        self.ensure_one()
+        return {'information': []}

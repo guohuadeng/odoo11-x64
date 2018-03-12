@@ -76,12 +76,14 @@ class SaleAdvancePaymentInv(models.TransientModel):
 
         if self.amount <= 0.00:
             raise UserError(_('The value of the down payment amount must be positive.'))
+        context = {'lang': order.partner_id.lang}
         if self.advance_payment_method == 'percentage':
             amount = order.amount_untaxed * self.amount / 100
             name = _("Down payment of %s%%") % (self.amount,)
         else:
             amount = self.amount
             name = _('Down Payment')
+        del context
         taxes = self.product_id.taxes_id.filtered(lambda r: not order.company_id or r.company_id == order.company_id)
         if order.fiscal_position_id and taxes:
             tax_ids = order.fiscal_position_id.map_tax(taxes).ids
@@ -107,7 +109,7 @@ class SaleAdvancePaymentInv(models.TransientModel):
                 'product_id': self.product_id.id,
                 'sale_line_ids': [(6, 0, [so_line.id])],
                 'invoice_line_tax_ids': [(6, 0, tax_ids)],
-                'account_analytic_id': order.project_id.id or False,
+                'account_analytic_id': order.analytic_account_id.id or False,
             })],
             'currency_id': order.pricelist_id.currency_id.id,
             'payment_term_id': order.payment_term_id.id,
@@ -152,6 +154,7 @@ class SaleAdvancePaymentInv(models.TransientModel):
                     tax_ids = order.fiscal_position_id.map_tax(taxes).ids
                 else:
                     tax_ids = taxes.ids
+                context = {'lang': order.partner_id.lang}
                 so_line = sale_line_obj.create({
                     'name': _('Advance: %s') % (time.strftime('%m %Y'),),
                     'price_unit': amount,
@@ -163,6 +166,7 @@ class SaleAdvancePaymentInv(models.TransientModel):
                     'tax_id': [(6, 0, tax_ids)],
                     'is_downpayment': True,
                 })
+                del context
                 self._create_invoice(order, so_line, amount)
         if self._context.get('open_invoices', False):
             return sale_orders.action_view_invoice()

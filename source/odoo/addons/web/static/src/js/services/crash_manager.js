@@ -54,7 +54,7 @@ var CrashManager = core.Class.extend({
             new (handler)(this, error).display();
             return;
         }
-        if (error.data.name === "openerp.http.SessionExpiredException" || error.data.name === "werkzeug.exceptions.Forbidden") {
+        if (error.data.name === "odoo.http.SessionExpiredException" || error.data.name === "werkzeug.exceptions.Forbidden") {
             this.show_warning({type: _t("Odoo Session Expired"), data: {message: _t("Your Odoo session expired. Please refresh the current web page.")}});
             return;
         }
@@ -103,7 +103,7 @@ var CrashManager = core.Class.extend({
         if (!this.active) {
             return;
         }
-        new Dialog(this, {
+        return new Dialog(this, {
             size: 'medium',
             title: _.str.capitalize(error.type || error.message) || _t("Odoo Warning"),
             subtitle: error.data.title,
@@ -149,10 +149,10 @@ var CrashManager = core.Class.extend({
             clipboard.destroy();
         });
 
-        dialog.open();
+        return dialog.open();
     },
     show_message: function(exception) {
-        this.show_error({
+        return this.show_error({
             type: _t("Odoo Client Error"),
             message: exception,
             data: {debug: ""}
@@ -161,19 +161,19 @@ var CrashManager = core.Class.extend({
 });
 
 /**
-    An interface to implement to handle exceptions. Register implementation in instance.web.crash_manager_registry.
+ * An interface to implement to handle exceptions. Register implementation in instance.web.crash_manager_registry.
 */
 var ExceptionHandler = {
     /**
-        @param parent The parent.
-        @param error The error object as returned by the JSON-RPC implementation.
-    */
+     * @param parent The parent.
+     * @param error The error object as returned by the JSON-RPC implementation.
+     */
     init: function(parent, error) {},
     /**
-        Called to inform to display the widget, if necessary. A typical way would be to implement
-        this interface in a class extending instance.web.Dialog and simply display the dialog in this
-        method.
-    */
+     * Called to inform to display the widget, if necessary. A typical way would be to implement
+     * this interface in a class extending instance.web.Dialog and simply display the dialog in this
+     * method.
+     */
     display: function() {},
 };
 

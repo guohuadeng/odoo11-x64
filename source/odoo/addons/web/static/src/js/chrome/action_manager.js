@@ -67,7 +67,7 @@ var Action = core.Class.extend({
     },
     /**
      * Stores the DOM fragment of the action
-     * @param {jQuery} [fragment] the DOM fragment
+     * @param {jQuery} [$fragment] the DOM fragment
      */
     set_fragment: function($fragment) {
         this.$fragment = $fragment;
@@ -300,11 +300,11 @@ var ActionManager = Widget.extend({
     /**
      * Add a new action to the action manager
      *
-     * widget: typically, widgets added are openerp.web.ViewManager. The action manager
-     *      uses the stack of actions to handle the breadcrumbs.
-     * action_descr: new action description
-     * options.on_reverse_breadcrumb: will be called when breadcrumb is clicked on
-     * options.clear_breadcrumbs: boolean, if true, action stack is destroyed
+     * @param {Widget} widget typically, widgets added are openerp.web.ViewManager. The action manager uses the stack of actions to handle the breadcrumbs.
+     * @param {Object} action_descr new action description
+     * @param {Object} options
+     * @param options.on_reverse_breadcrumb will be called when breadcrumb is clicked on
+     * @param options.clear_breadcrumbs: boolean, if true, action stack is destroyed
      */
     push_action: function(widget, action_descr, options) {
         var self = this;
@@ -420,6 +420,10 @@ var ActionManager = Widget.extend({
         return this.inner_widget;
     },
     history_back: function() {
+        if (this.dialog) {
+            this.dialog.close();
+            return;
+        }
         var nbViews = this.inner_action.get_nb_views();
         if (nbViews > 1) {
             // Stay on this action, but select the previous view
@@ -604,7 +608,7 @@ var ActionManager = Widget.extend({
                 });
         }
 
-        return $.when(action_loaded || null).done(function() {
+        return $.when(action_loaded || null).then(function() {
             if (self.inner_widget && self.inner_widget.do_load_state) {
                 return self.inner_widget.do_load_state(state, warm);
             }
@@ -613,7 +617,7 @@ var ActionManager = Widget.extend({
     /**
      * Execute an OpenERP action
      *
-     * @param {Number|String|String|Object} Can be either an action id, an action XML id, a client action tag or an action descriptor.
+     * @param {Number|String|String|Object} action Can be either an action id, an action XML id, a client action tag or an action descriptor.
      * @param {Object} [options]
      * @param {Boolean} [options.clear_breadcrumbs=false] Clear the breadcrumbs history list
      * @param {Boolean} [options.replace_breadcrumb=false] Replace the current breadcrumb with the action
@@ -912,14 +916,14 @@ var ActionManager = Widget.extend({
                 action: JSON.stringify(action),
                 token: new Date().getTime()
             };
-            var url = self.session.url('/web/report', params);
+            var url = session.url('/web/report', params);
             framework.unblockUI();
             $('<a href="'+url+'" target="_blank"></a>')[0].click();
             return;
         }
         var c = crash_manager;
         return $.Deferred(function (d) {
-            self.session.get_file({
+            session.get_file({
                 url: '/web/report',
                 data: {action: JSON.stringify(action)},
                 complete: framework.unblockUI,
@@ -937,7 +941,7 @@ var ActionManager = Widget.extend({
             });
         });
     },
-    ir_actions_act_url: function (action) {
+    ir_actions_act_url: function (action, options) {
         var url = action.url;
         if (session.debug && url && url.length && url[0] === '/') {
             url = $.param.querystring(url, {debug: session.debug});
@@ -948,6 +952,7 @@ var ActionManager = Widget.extend({
             return $.Deferred(); // The action is finished only when the redirection is done
         } else {
             window.open(url, '_blank');
+            options.on_close();
         }
         return $.when();
     },

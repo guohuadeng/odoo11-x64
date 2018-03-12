@@ -11,5 +11,6 @@ from . import account_analytic_line
 from . import account_journal_dashboard
 from . import product
 from . import company
-from . import account_config_settings
+from . import res_config_settings
 from . import web_planner
+from . import account_cash_rounding

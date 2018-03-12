@@ -3,25 +3,28 @@
 # * website_blog
 # 
 # Translators:
-# Jeffery CHEN <jeffery9@gmail.com>, 2016
-# liAnGjiA <liangjia@qq.com>, 2016
-# Martin Trigaux <mat@odoo.com>, 2016
-# fausthuang <faust_huang@hotmail.com>, 2016
-# Talway <9010446@qq.com>, 2016
-# Eddie Lim <bhweelim@yahoo.com>, 2016
-# waveyeung <waveyeung@qq.com>, 2016
-# 菜小蛇 <lttlsnk@gmail.com>, 2016
-# glovebx <ruinning@163.com>, 2016
-# SHOM <shanmuxin@yeah.net>, 2016
-# 苏州远鼎 <tiexinliu@126.com>, 2016
+# Jeffery CHEN Fan <jeffery9@gmail.com>, 2017
+# Talway <9010446@qq.com>, 2017
+# fausthuang, 2017
+# n37r06u3 <n37r06u3@gmail.com>, 2017
+# liAnGjiA <liangjia@qq.com>, 2017
+# Martin Trigaux, 2017
+# SHOM <shanmuxin@yeah.net>, 2017
+# 菜小蛇 <lttlsnk@gmail.com>, 2017
+# glovebx <ruinning@163.com>, 2017
+# waveyeung <waveyeung@qq.com>, 2017
+# 苏州远鼎 <tiexinliu@126.com>, 2017
 # THL <wt39181819@gmail.com>, 2017
+# 老窦 北京 <2662059195@qq.com>, 2017
+# e2f <projects@e2f.com>, 2018
+# e2f_cn c5 <jarvisn@ecinnovations.com>, 2018
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 10.saas~14\n"
+"Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-15 09:50+0000\n"
-"PO-Revision-Date: 2017-02-15 09:50+0000\n"
-"Last-Translator: THL <wt39181819@gmail.com>, 2017\n"
+"POT-Creation-Date: 2017-10-24 09:00+0000\n"
+"PO-Revision-Date: 2017-10-24 09:00+0000\n"
+"Last-Translator: e2f_cn c5 <jarvisn@ecinnovations.com>, 2018\n"
 "Language-Team: Chinese (China) (https://www.transifex.com/odoo/teams/41243/zh_CN/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -30,9 +33,72 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"\"Finally, the leading edge is being brought to the masses.\n"
+"                        It will now be the turn of the big players to catch up to\n"
+"                        the superior technologies of the SME.\""
+msgstr ""
+"“最终，为人们带来领先的优势。\n"
+"现在轮到大型企业追赶\n"
+"中小型企业的领先技术。”"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"\"Odoo now competes on many fronts, with no real\n"
+"                    competition out there to knock them off the top spot.\n"
+"                    With the launch of their integrated CMS and Ecommerce\n"
+"                    systems,it only elevates their position as one of the leading\n"
+"                    lights in the open source revolution. It will be at least 5\n"
+"                    years before another ERP or CMS provider will be able to\n"
+"                    compete at this level due to the technology currently\n"
+"                    employed by most industry providers.\""
+msgstr ""
+"“现在，Odoo 在许多方面都存在竞争，但其领先地位无人能够撼动。\n"
+"伴随集成 CMS 和电子商务系统的推出，其作为开源革命\n"
+" 领导者之一的地位只会更加巩固。根据目前大多数行业供应商所采用的技术，至少 5 年\n"
+"以后才会有其它 ERP 或 CMS 供应商\n"
+"能在这个级别的技术上进行竞争。”"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"\"Odoo's latest launch will allow a business to go from\n"
+"                    zero to trading online quicker than ever before,” Stuart\n"
+"                    Mackintosh, MD of Open Source specialist and Odoo\n"
+"                    integration partner, OpusVL, explains. “The investment\n"
+"                    required to have a fully automated business system is\n"
+"                    dramatically reduced, enabling the small and medium\n"
+"                    enterprise to compete at a level of functionality and\n"
+"                    performance previously reserved for the big IT investors.\""
+msgstr ""
+"“Odoo 最新推出的功能可以使\n"
+"零起点的企业更早地能够进行在线交易”开源\n"
+"专家和 Odoo 集成\n"
+"合作伙伴 OpusVL 的营销总监 Stuart Mackintosh 解释道。“实现\n"
+"完全自动化业务系统所需的投资大幅\n"
+" 减少，使得中小型企业能够\n"
+"在以前为大型 IT 投资者\n"
+"所保留的功能和性能方面展开竞争。”"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"\"This is another clever and highly disruptive move by\n"
+"                    Odoo,which will force other technology providers to\n"
+"                    take another look at the value they are providing to ensure\n"
+"                    that their 'solutions' can still compete.\""
+msgstr ""
+"“这是 Odoo 做出的另一个明智而具有颠覆性的\n"
+"举措，这将迫使其它的技术供应商\n"
+"再次审视其能够带来的价值以确保\n"
+"它们的‘解决方案’仍然具有竞争力。”"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
 msgid "&amp;mdash;"
-msgstr ""
+msgstr "&mdash;"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.latest_blogs
@@ -49,21 +115,21 @@ msgstr "xml version=\"1.0\" encoding=\"utf-8\";"
 msgid ""
 "(Un)archiving a blog automatically (un)archives its posts. Do you want to "
 "proceed?"
-msgstr ""
+msgstr "（取消）归档博客将自动（取消）归档其中的博客文章。是否继续？"
 
 #. module: website_blog
 #. openerp-web
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:53
 #, python-format
 msgid "<b>Click on Save</b> to record your changes."
-msgstr ""
+msgstr "<b>单击“保存</b>”以记录您的更改。"
 
 #. module: website_blog
 #. openerp-web
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:69
 #, python-format
 msgid "<b>Publish your blog post</b> to make it visible to your visitors."
-msgstr ""
+msgstr "<b>发布博客文章</b>，使其对您的访客可见。"
 
 #. module: website_blog
 #. openerp-web
@@ -72,7 +138,7 @@ msgstr ""
 msgid ""
 "<b>That's it, your blog post is published!</b> Discover more features "
 "through the <i>Customize</i> menu."
-msgstr ""
+msgstr "<b>就是这样，您的博客文章已发布！</b>通过<i>“自定义</i>”菜单发现更多功能。"
 
 #. module: website_blog
 #. openerp-web
@@ -82,12 +148,23 @@ msgid ""
 "<b>Write your story here.</b> Use the top toolbar to style your text: add an"
 " image or table, set bold or italic, etc. Drag and drop building blocks for "
 "more graphical blogs."
+msgstr "在<b>这里写下您的故事。</b>使用顶部的工具栏来设计文本：添加图像或表格、设置粗体或斜体等。拖放构建块来得到更加图像化的博客。"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"A mix of push &amp; pull: Today, people\n"
+"                        are victims of what others decide to push to them.\n"
+"                        Odoo differentiates:"
 msgstr ""
+"推送和获取的结合：如今\n"
+"人们是其他人决定推送的内容的受害者。\n"
+"Odoo 则不然："
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_template_new_post
 msgid "A new post"
-msgstr ""
+msgstr "新帖"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.opt_blog_rc_about_us
@@ -97,7 +174,7 @@ msgstr "关于我们"
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_template_new_post
 msgid "Access post"
-msgstr ""
+msgstr "访问帖子"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_blog_active
@@ -106,15 +183,48 @@ msgid "Active"
 msgstr "有效"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid "Adding to industry leading technology"
+msgstr "添加到行业领先技术"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_blog_view_search
 #: model:ir.ui.view,arch_db:website_blog.view_blog_post_search
 msgid "Archived"
-msgstr "已归档"
+msgstr "归档"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.opt_blog_rc_history
 msgid "Archives"
 msgstr "归档"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"As it comes, there is a default website based on Bootstrap\n"
+"                    3, the latest industry standard for rapid development of\n"
+"                    multi-device websites backed by Twitter, so can be directly\n"
+"                    integrated with many web tools and works across all devices\n"
+"                    by default."
+msgstr ""
+"与此同时，这是一个基于由 Twitter 支持，可以\n"
+"快速开发多设备网站的最新行业标准 Bootstrap 3 的默认\n"
+"网站，因此可以直接与许多 web 工具\n"
+"集成并默认可以在所有\n"
+"设备上工作。"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"At Odoo, we build tools to bring productivity to\n"
+"                    enterprises. As emails and information flows are one of\n"
+"                    the biggest wastes of time in companies, we have to fix\n"
+"                    this."
+msgstr ""
+"在 Odoo，我们创造为企业带来生产力的\n"
+"工具。由于电子邮件和信息流是最\n"
+"浪费公司时间的问题之一，我们必须解决\n"
+"这个问题。"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
@@ -153,7 +263,8 @@ msgid "Blog Name"
 msgstr "博客名称"
 
 #. module: website_blog
-#: code:addons/website_blog/models/website.py:23
+#: code:addons/website_blog/models/website.py:22
+#: code:addons/website_blog/models/website.py:47
 #: model:ir.model,name:website_blog.model_blog_post
 #: model:ir.ui.view,arch_db:website_blog.view_blog_post_form
 #: model:ir.ui.view,arch_db:website_blog.view_blog_post_search
@@ -162,7 +273,13 @@ msgid "Blog Post"
 msgstr "博文"
 
 #. module: website_blog
-#: code:addons/website_blog/models/website.py:27
+#: code:addons/website_blog/models/website.py:53
+#, python-format
+msgid "Blog Post <b>%s</b> seems to be calling this file !"
+msgstr "博客文章 <b>%s</b> 似乎调用了此文件！"
+
+#. module: website_blog
+#: code:addons/website_blog/models/website.py:28
 #, python-format
 msgid "Blog Post <b>%s</b> seems to have a link to this page !"
 msgstr "博客文章 <b>%s</b> 似乎有一个链接到这个网页！"
@@ -175,9 +292,12 @@ msgid "Blog Post Title"
 msgstr "博文标题"
 
 #. module: website_blog
+#: code:addons/website_blog/models/website.py:24
+#: code:addons/website_blog/models/website.py:49
 #: model:ir.actions.act_window,name:website_blog.action_blog_post
 #: model:ir.ui.menu,name:website_blog.menu_page
 #: model:ir.ui.view,arch_db:website_blog.view_blog_post_list
+#, python-format
 msgid "Blog Posts"
 msgstr "博文"
 
@@ -204,12 +324,17 @@ msgstr "博客标签"
 #: model:ir.ui.menu,name:website_blog.menu_blog
 #: model:ir.ui.view,arch_db:website_blog.view_blog_blog_list
 msgid "Blogs"
-msgstr "博文"
+msgstr "博客"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Blue"
 msgstr "蓝色"
+
+#. module: website_blog
+#: model:blog.post,subtitle:website_blog.blog_post_2
+msgid "Building your company's website and selling your products online easy."
+msgstr "轻松构建你公司的网站和在线销售你的产品。"
 
 #. module: website_blog
 #. openerp-web
@@ -224,27 +349,27 @@ msgstr "修改封面"
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:35
 #, python-format
 msgid "Choose an image from the library."
-msgstr "选择从库中的图像。"
+msgstr "从库中选择图像。"
 
 #. module: website_blog
 #. openerp-web
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:30
 #, python-format
 msgid "Click here to change your post cover."
-msgstr ""
+msgstr "单击此处更改您的文章封面。"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
 msgid ""
 "Click on \"New Page\" in the top-right corner to write your first blog post."
-msgstr ""
+msgstr "单击右上角的“新建页面”来写下您的第一篇博客文章。"
 
 #. module: website_blog
 #. openerp-web
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:40
 #, python-format
 msgid "Click on <b>Save</b> to set the picture as cover."
-msgstr ""
+msgstr "点击<b>保存</b>将图片设为封面。"
 
 #. module: website_blog
 #: model:ir.actions.act_window,help:website_blog.action_blog_post
@@ -278,6 +403,7 @@ msgstr "创建时间"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_mail_compose_message_path
+#: model:ir.model.fields,field_description:website_blog.field_mail_mail_path
 #: model:ir.model.fields,field_description:website_blog.field_mail_message_path
 #: model:ir.model.fields,field_description:website_blog.field_survey_mail_compose_message_path
 msgid "Discussion Path"
@@ -291,24 +417,89 @@ msgid "Display Name"
 msgstr "显示名称"
 
 #. module: website_blog
-#: model:ir.ui.view,arch_db:website_blog.blog_post_complete
+#: model:ir.ui.view,arch_db:website_blog.blog_edit_options
 msgid "Duplicate"
 msgstr "复制"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid "Emails are broken."
+msgstr "电子邮件已损坏。"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Emails make me waste my time. But I need them.\n"
+"                    Given the importance that emails have in our lives,\n"
+"                    it's incredible it's still one of the only software\n"
+"                    areas that did not evolve in the past 20 years!"
+msgstr ""
+"电子邮件浪费我的时间。但是我需要电子邮件。\n"
+"电子邮件在我们的生活中非常重要，\n"
+"但令人难以置信的是，电子邮件也是过去 20 年间\n"
+"唯一一个没有得到发展的软件领域。"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Filter Color"
-msgstr ""
+msgstr "过滤颜色"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Filter Intensity"
+msgstr "筛选强度"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Focus on the Content: Everything is\n"
+"                        stripped to emphasize on the real message. No more\n"
+"                        welcome introductions, greetings, signatures and legal\n"
+"                        notes.We standardize the layout of each message.\n"
+"                        (signatures are on the profile of a contact, not in\n"
+"                        every message)"
 msgstr ""
+"专注于内容：除去无关\n"
+"内容，只留下真正的消息。没有\n"
+" 欢迎介绍、问候、签名和法定\n"
+" 注释。我们标准化每条信息的布局。\n"
+" （签名位于联系人的个人资料中，不在\n"
+" 每条消息中）"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Folders and mailing lists are great tools but too\n"
+"                        complex in traditional email clients. In Odoo, a\n"
+"                        group of contacts that share a discussion can be\n"
+"                        created with one click. Every group should have it's\n"
+"                        own email address."
+msgstr ""
+"文件夹和邮件列表是很好的工具但是\n"
+"对于传统的电子邮件客户来说过于复杂。在 Odoo 中，仅需\n"
+"一次点击即可创建共享\n"
+"讨论的联系人组。每一组都有\n"
+"自己的电子邮件地址。"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Full Screen"
 msgstr "全屏"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Get Things Done: your inbox is a\n"
+"                        todo list. You should be able to process (not only\n"
+"                        read) the inbox and easily mark messages for future\n"
+"                        actions. Every inbox should be empty after having\n"
+"                        been processed; no more overload of information."
+msgstr ""
+"完成事情：您的收件箱就是\n"
+"待办事项列表。您应该能够处理（不仅是\n"
+"阅读）收件箱中的内容并能轻松标记用于未来\n"
+"行动的消息。每个收件箱应在处理后\n"
+"进行清空；没有过多的信息。"
 
 #. module: website_blog
 #: model:blog.blog,subtitle:website_blog.blog_blog_1
@@ -326,9 +517,29 @@ msgid "Group By"
 msgstr "分组"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid "Here are the ideas behind the Odoo communication tools:"
+msgstr "以下是 Odoo 通信工具背后的想法："
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "High"
 msgstr "高"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"However, unlike other web content management systems, it\n"
+"                    fully integrates into the back-end database. This means\n"
+"                    that when you edit a product description, image or price,\n"
+"                    it updates the product database in real time, providing a\n"
+"                    true self-service window into the business."
+msgstr ""
+"然而，与其它 web 内容管理系统不同，它\n"
+"完全集成到后端数据库中。这意味着\n"
+"当您编辑产品说明、图像或价格时，\n"
+"会实时地更新产品数据库，为业务提供了\n"
+"真正的自助窗口。"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_blog_id
@@ -338,9 +549,32 @@ msgid "ID"
 msgstr "ID"
 
 #. module: website_blog
+#: model:blog.post,subtitle:website_blog.blog_post_1
+msgid "Ideas behind the Odoo communication tools."
+msgstr "在Odoo通讯工具背后的想法。"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.latest_blogs
 msgid "In"
 msgstr "在"
+
+#. module: website_blog
+#: model:blog.post,name:website_blog.blog_post_2
+msgid "Integrating your CMS and E-Commerce"
+msgstr "集成你的内容管理系统和电子商务"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Keep control of what you want to receive or don't want\n"
+"                        to receive. People should never receive spam. You\n"
+"                        should follow/unfollow any kind of information in one\n"
+"                        click."
+msgstr ""
+"保持对想接收和不想\n"
+"接收的内容的控制。人们不应收到垃圾邮件。您\n"
+"应该仅需一次点击就能关注/取消关注任意类型的\n"
+"信息。"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_write_uid
@@ -354,13 +588,13 @@ msgstr "最近的贡献者"
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_write_date
 #: model:ir.model.fields,field_description:website_blog.field_blog_tag___last_update
 msgid "Last Modified on"
-msgstr "最后修改日"
+msgstr "最后修改时间"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_blog_write_uid
 #: model:ir.model.fields,field_description:website_blog.field_blog_tag_write_uid
 msgid "Last Updated by"
-msgstr "最后更新人"
+msgstr "最后更新者"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_blog_write_date
@@ -374,6 +608,17 @@ msgid "Latest Posts"
 msgstr "最新发布"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"Like many modern website editors, with Odoo you can edit\n"
+"                    content in-line, enabling you to see exactly what you are\n"
+"                    changing and ensure your changes suit the context."
+msgstr ""
+"就像很多现代的网站编辑器一样，您可以使用 Odoo \n"
+"对内容进行嵌入式编辑，这样您可以看到所编辑的\n"
+"内容并确保更改符合背景。"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Low"
 msgstr "低"
@@ -381,7 +626,7 @@ msgstr "低"
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Medium"
-msgstr "普通"
+msgstr "媒体"
 
 #. module: website_blog
 #: model:ir.model,name:website_blog.model_mail_message
@@ -389,9 +634,41 @@ msgid "Message"
 msgstr "消息"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Messages \"for action\": they\n"
+"                                require your immediate attention and you need\n"
+"                                to process them all. This accounts for 10%\n"
+"                                of your daily emails. Use the \"To: me\" menu\n"
+"                                for these."
+msgstr ""
+"“用于行动”的消息：这些消息\n"
+"都需要您的立即注意\n"
+"和处理。您的日常电子邮件中有 10%\n"
+" 属于此类消息。针对这些内容使用“收件人：我”\n"
+"菜单。"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Messages \"for information\":\n"
+"                                you can pull them when you need some specific\n"
+"                                information; they are not required to be read\n"
+"                                every day.You receive only what you decided\n"
+"                                to follow.This accounts for 90% of your daily\n"
+"                                emails.Use the \"Inbox\" menu for these."
+msgstr ""
+"“用于参考”的消息：\n"
+"现在您可以在需要指定信息时才\n"
+"获取这些消息；这些消息不必\n"
+"每天阅读。只有当您决定\n"
+"关注时才会接受此类消息。这些内容占了您日常\n"
+"电子邮件的 90%。针对这些使用“收件箱”菜单。"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Mid screen"
-msgstr ""
+msgstr "中屏"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_tag_name
@@ -405,11 +682,16 @@ msgstr "变窄"
 
 #. module: website_blog
 #. openerp-web
-#: code:addons/website_blog/static/src/js/website_blog.editor.js:21
+#: code:addons/website_blog/static/src/js/website_blog.editor.js:37
 #: model:ir.ui.view,arch_db:website_blog.content_new_blogpost
 #, python-format
 msgid "New Blog Post"
 msgstr "发布新博文"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid "New Features Launched"
+msgstr "新功能登录"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.header_footer_custom
@@ -442,11 +724,27 @@ msgid "None"
 msgstr "无"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"Odoo claims to be 'the Open Source software that makes\n"
+"                    building your company's website and selling your products\n"
+"                    online easy'. So how true is this statement?"
+msgstr ""
+"Odoo 声称是能够‘让您轻松建立公司网站并在\n"
+"                    线销售产品的开源软件’。那么，该声明千真万\n"
+"                    确吗？"
+
+#. module: website_blog
+#: model:blog.post,website_meta_keywords:website_blog.blog_post_1
+msgid "Odoo, email"
+msgstr "Odoo，email"
+
+#. module: website_blog
 #. openerp-web
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:63
 #, python-format
 msgid "Once you have reviewed the content on mobile, close the preview."
-msgstr ""
+msgstr "当您在手机上查看过内容后，请关闭预览。"
 
 #. module: website_blog
 #: model:blog.blog,name:website_blog.blog_blog_1
@@ -469,7 +767,20 @@ msgid "Posts"
 msgstr "帖子"
 
 #. module: website_blog
-#: code:addons/website_blog/controllers/main.py:269
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Productivity is key: our smart user\n"
+"                        interface does not require you to click on every mail\n"
+"                        to read a thread. Reading a full thread, replying,\n"
+"                        attaching documents is super fast."
+msgstr ""
+"生产力是关键：我们的智能用户\n"
+"界面不需要您单击每封邮件\n"
+"来阅读消息。读取完整的消息、进行回复、\n"
+"附加文档的速度非常快。"
+
+#. module: website_blog
+#: code:addons/website_blog/controllers/main.py:270
 #, python-format
 msgid "Public user cannot post comments on blog post."
 msgstr "公众用户不能在博客发表评论。"
@@ -491,14 +802,14 @@ msgid "Published Post"
 msgstr "已发布的帖子"
 
 #. module: website_blog
-#: model:ir.model.fields,field_description:website_blog.field_blog_post_post_date
-msgid "Published date"
-msgstr "发布日期"
-
-#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.view_blog_post_form
 msgid "Publishing Options"
-msgstr ""
+msgstr "发布选项"
+
+#. module: website_blog
+#: model:ir.model.fields,field_description:website_blog.field_blog_post_post_date
+msgid "Publishing date"
+msgstr "发布日期"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
@@ -514,6 +825,26 @@ msgstr "等级"
 #: model:ir.ui.view,arch_db:website_blog.opt_blog_post_complete_read_next
 msgid "Read Next <span class=\"fa fa-long-arrow-right\"/>"
 msgstr "阅读下一页"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"Reading my inbox is the most unproductive task I do\n"
+"                    on a daily basis. I have to spend one full hour a\n"
+"                    day to process my emails. All the junk flows in the\n"
+"                    same inbox; spams, information that doesn't matter,\n"
+"                    quoted answers of quoted answers, etc. At the end\n"
+"                    of the hour, only 10 emails actually requested an\n"
+"                    answer from me. With a good tool, I could have done\n"
+"                    my job in 10 minutes!"
+msgstr ""
+"阅读收件箱的内容是我日常事务中\n"
+"最无益的任务。我每天都要花费整整一个\n"
+"小时来处理我的电子邮件。所有无用的内容都会进入\n"
+"相同的收件箱中；垃圾邮件、无关紧要的信息、\n"
+"引用回复的引用回复等。在\n"
+"一个小时后，实际上只有 10 封电子邮件需要\n"
+"我的回复。通过好的工具，我可以在 10 分钟内完成工作！"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
@@ -532,12 +863,12 @@ msgstr "选择此菜单项新建一篇博文"
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:26
 #, python-format
 msgid "Set a blog post <b>cover</b>."
-msgstr ""
+msgstr "设置博客文章<b>封面。</b>"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
 msgid "Size"
-msgstr "尺寸："
+msgstr "尺寸"
 
 #. module: website_blog
 #: model:ir.model.fields,help:website_blog.field_blog_post_author_avatar
@@ -549,7 +880,7 @@ msgstr "联系人小尺寸图像。自动缩放为64x64px ，保留纵横比。�
 
 #. module: website_blog
 #. openerp-web
-#: code:addons/website_blog/models/website_blog.py:120
+#: code:addons/website_blog/models/website_blog.py:123
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:52
 #, python-format
 msgid "Start writing here..."
@@ -563,7 +894,7 @@ msgstr "状态"
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.opt_blog_rc_follow_us
 msgid "Stay updated :"
-msgstr ""
+msgstr "保持最新："
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_subtitle
@@ -595,17 +926,17 @@ msgstr "标签名已存在!"
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_tag_ids
 #: model:ir.ui.view,arch_db:website_blog.opt_blog_rc_tags
 msgid "Tags"
-msgstr "标签"
+msgstr "摘要"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_teaser
 msgid "Teaser"
-msgstr ""
+msgstr "预告"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_teaser_manual
 msgid "Teaser Content"
-msgstr ""
+msgstr "预告内容"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.view_blog_post_form
@@ -613,16 +944,63 @@ msgid "Technical"
 msgstr "技术"
 
 #. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid "The Communication Mechanism of Odoo"
+msgstr "Odoo 的通信机制"
+
+#. module: website_blog
+#: model:blog.post,name:website_blog.blog_post_1
+#: model:blog.post,website_meta_description:website_blog.blog_post_1
+msgid "The Future of Emails"
+msgstr "电子邮件的未来"
+
+#. module: website_blog
+#: model:ir.model.fields,help:website_blog.field_blog_post_post_date
+msgid ""
+"The blog post will be visible for your visitors as of this date on the "
+"website if it is set as published."
+msgstr "如果博客文章设为已发布，则网站的访客从即日起能够看到此博客文章。"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.latest_blogs
 msgid ""
 "This page is great to improve your <strong>Search Engine Optimization</strong>;\n"
 "                   You can review titles, keywords and descriptions of all blogs at once."
-msgstr "这个页面可以很好的提高你的搜索引擎优化;您可以一次查看的标题，关键字和所有的博客描述。"
+msgstr "这个页面可以很好的提高你的搜索引擎优化;你可以一次查看的标题，关键字和所有的博客描述。"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"This provides a single source of data for your company and\n"
+"                    removes the need to create offline synchronisation between\n"
+"                    website and product database."
+msgstr ""
+"这会为您的公司提供单一的数据源，并且\n"
+"不再需要在网站和产品数据库之间\n"
+"进行离线同步。"
 
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_name
 msgid "Title"
-msgstr "称谓"
+msgstr "主题"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_2
+msgid ""
+"To add to an already comprehensive set of Odoo\n"
+"                features, a website content management system (CMS or WMS) has been developed and a beta release is\n"
+"                available from today, 31st January 2014."
+msgstr ""
+"网站内容管理系统（CMS 或 WMS）已经开发完毕，并且从今天（2014 年 1 月 31 日）起将发布测试版，以添加到完整的 Odoo 功能中。"
+
+#. module: website_blog
+#: model:blog.post,content:website_blog.blog_post_1
+msgid ""
+"To disrupt emails, you need more than just another user\n"
+"                    interface. We need to rethink the whole communication flow."
+msgstr ""
+"为了分解电子邮件，您不仅需要另一个\n"
+"用户界面。我们需要重新考虑整个通信流程。"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.opt_blog_rc_status
@@ -639,7 +1017,7 @@ msgstr "无标题发表"
 #: code:addons/website_blog/static/src/js/website.tour.blog.js:58
 #, python-format
 msgid "Use this icon to preview your blog post on <b>mobile devices</b>."
-msgstr ""
+msgstr "使用此图标，在<b>移动设备</b>上预览您的博客文章。"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_tag_form
@@ -648,6 +1026,7 @@ msgstr "使用在："
 
 #. module: website_blog
 #: model:ir.model.fields,help:website_blog.field_mail_compose_message_path
+#: model:ir.model.fields,help:website_blog.field_mail_mail_path
 #: model:ir.model.fields,help:website_blog.field_mail_message_path
 #: model:ir.model.fields,help:website_blog.field_survey_mail_compose_message_path
 msgid ""
@@ -667,12 +1046,12 @@ msgstr "博客地址"
 #. module: website_blog
 #: model:ir.model.fields,field_description:website_blog.field_blog_post_website_message_ids
 msgid "Website Messages"
-msgstr "网站消息"
+msgstr "网站信息"
 
 #. module: website_blog
 #: model:ir.model.fields,help:website_blog.field_blog_post_website_message_ids
 msgid "Website communication history"
-msgstr "网站沟通历史"
+msgstr "网站沟通记录"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.website_blog
@@ -703,12 +1082,12 @@ msgstr "黄色"
 msgid ""
 "You should <strong>add a banner on the top</strong> as it is a frequent landing page for new visitors.\n"
 "                   <span class=\"text-muted\">This box will not be visible to your visitors.</span>"
-msgstr "您应该添加一个横幅在顶部，因为它是一种常见的登陆页面为新访客。此框是不可见的对你访问者。"
+msgstr "你应该添加一个横幅在顶部，因为它是一种常见的登陆页面为新访客。此框是不可见的对你访问者。"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_template_new_post
 msgid "blog. Click here to access the blog :"
-msgstr ""
+msgstr "博客。单击此处访问博客："
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
@@ -723,15 +1102,20 @@ msgid "comments"
 msgstr "备注"
 
 #. module: website_blog
+#: model:blog.tag,name:website_blog.blog_tag_1
+msgid "functional"
+msgstr "功能"
+
+#. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_template_new_post
 msgid "has been published on the"
-msgstr ""
+msgstr "已发布到"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
 #: model:ir.ui.view,arch_db:website_blog.latest_blogs
 msgid "pull-right"
-msgstr "往右拉"
+msgstr "右拉"
 
 #. module: website_blog
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
@@ -747,3 +1131,8 @@ msgstr "视图"
 #: model:ir.ui.view,arch_db:website_blog.blog_post_short
 msgid "views"
 msgstr "浏览次数"
+
+#. module: website_blog
+#: model:blog.tag,name:website_blog.blog_tag_2
+msgid "website"
+msgstr "网站"

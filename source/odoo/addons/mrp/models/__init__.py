@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from . import mrp_document
-from . import mrp_config_settings
+from . import res_config_settings
 from . import mrp_bom
 from . import mrp_message
 from . import mrp_routing
@@ -16,5 +16,6 @@ from . import product
 from . import res_company
 from . import stock_move
 from . import stock_picking
+from . import stock_production_lot
 from . import stock_scrap
 from . import stock_warehouse

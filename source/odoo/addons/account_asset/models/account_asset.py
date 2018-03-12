@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF, pycompat
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
 from odoo.tools import float_compare, float_is_zero
 
 
@@ -374,7 +374,7 @@ class AccountAssetAsset(models.Model):
         vals = self.onchange_category_id_values(self.category_id.id)
         # We cannot use 'write' on an object that doesn't exist yet
         if vals:
-            for k, v in pycompat.items(vals['value']):
+            for k, v in vals['value'].items():
                 setattr(self, k, v)
 
     def onchange_category_id_values(self, category_id):
@@ -478,6 +478,8 @@ class AccountAssetDepreciationLine(models.Model):
         created_moves = self.env['account.move']
         prec = self.env['decimal.precision'].precision_get('Account')
         for line in self:
+            if line.move_id:
+                raise UserError(_('This depreciation is already linked to a journal entry! Please post or delete it.'))
             category_id = line.asset_id.category_id
             depreciation_date = self.env.context.get('depreciation_date') or line.depreciation_date or fields.Date.context_today(self)
             company_currency = line.asset_id.company_id.currency_id
@@ -583,7 +585,7 @@ class AccountAssetDepreciationLine(models.Model):
             message = ''
             if message_description:
                 message = '<span>%s</span>' % message_description
-            for name, values in pycompat.items(tracked_values):
+            for name, values in tracked_values.items():
                 message += '<div> &nbsp; &nbsp; &bull; <b>%s</b>: ' % name
                 message += '%s</div>' % values
             return message

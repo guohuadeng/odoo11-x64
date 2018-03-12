@@ -2,25 +2,60 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import http, _
+from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
 from odoo.exceptions import AccessError
 from odoo.http import request
-
-from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
+from odoo.tools import consteq
 
 
 class PortalAccount(CustomerPortal):
-
-    def _prepare_portal_layout_values(self):
-        values = super(PortalAccount, self)._prepare_portal_layout_values()
+    
+    def _get_account_invoice_domain(self):
         partner = request.env.user.partner_id
-
-        invoice_count = request.env['account.invoice'].search_count([
+        domain = [
             ('type', 'in', ['out_invoice', 'out_refund']),
             ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
             ('state', 'in', ['open', 'paid', 'cancel'])
-        ])
+        ]
+        return domain
 
+    def _prepare_portal_layout_values(self):
+        values = super(PortalAccount, self)._prepare_portal_layout_values()
+        invoice_count = request.env['account.invoice'].search_count(self._get_account_invoice_domain())
         values['invoice_count'] = invoice_count
+        return values
+
+    # ------------------------------------------------------------
+    # My Invoices
+    # ------------------------------------------------------------
+
+    def _invoice_check_access(self, invoice_id, access_token=None):
+        invoice = request.env['account.invoice'].browse([invoice_id])
+        invoice_sudo = invoice.sudo()
+        try:
+            invoice.check_access_rights('read')
+            invoice.check_access_rule('read')
+        except AccessError:
+            if not access_token or not consteq(invoice_sudo.access_token, access_token):
+                raise
+        return invoice_sudo
+
+    def _invoice_get_page_view_values(self, invoice, access_token, **kwargs):
+        values = {
+            'page_name': 'invoice',
+            'invoice': invoice,
+        }
+        if access_token:
+            values['no_breadcrumbs'] = True
+            values['access_token'] = access_token
+
+        if kwargs.get('error'):
+            values['error'] = kwargs['error']
+        if kwargs.get('warning'):
+            values['warning'] = kwargs['warning']
+        if kwargs.get('success'):
+            values['success'] = kwargs['success']
+
         return values
 
     @http.route(['/my/invoices', '/my/invoices/page/<int:page>'], type='http', auth="user", website=True)
@@ -29,11 +64,7 @@ class PortalAccount(CustomerPortal):
         partner = request.env.user.partner_id
         AccountInvoice = request.env['account.invoice']
 
-        domain = [
-            ('type', 'in', ['out_invoice', 'out_refund']),
-            ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
-            ('state', 'in', ['open', 'paid', 'cancelled'])
-        ]
+        domain = self._get_account_invoice_domain()
 
         searchbar_sortings = {
             'date': {'label': _('Invoice Date'), 'order': 'date_invoice desc'},
@@ -74,24 +105,35 @@ class PortalAccount(CustomerPortal):
         })
         return request.render("account.portal_my_invoices", values)
 
-    @http.route(['/my/invoices/<int:invoice_id>'], type='http', auth="user", website=True)
-    def portal_my_invoices_report(self, invoice_id, **kw):
-        invoice = request.env['account.invoice'].browse(invoice_id)
+    @http.route(['/my/invoices/<int:invoice_id>'], type='http', auth="public", website=True)
+    def portal_my_invoice_detail(self, invoice_id, access_token=None, **kw):
         try:
-            invoice.check_access_rights('read')
-            invoice.check_access_rule('read')
-        # TDE FIXME: does not exist, or maybe, don't know
+            invoice_sudo = self._invoice_check_access(invoice_id, access_token)
+        except AccessError:
+            return request.redirect('/my')
+
+        values = self._invoice_get_page_view_values(invoice_sudo, access_token, **kw)
+        return request.render("account.portal_invoice_page", values)
+
+    @http.route(['/my/invoices/pdf/<int:invoice_id>'], type='http', auth="public", website=True)
+    def portal_my_invoice_report(self, invoice_id, access_token=None, **kw):
+        try:
+            invoice_sudo = self._invoice_check_access(invoice_id, access_token)
         except AccessError:
             return request.redirect('/my')
 
         # print report as sudo, since it require access to taxes, payment term, ... and portal
         # does not have those access rights.
-        pdf = request.env.ref('account.account_invoices').sudo().render_qweb_pdf([invoice_id])[0]
+        pdf = request.env.ref('account.account_invoices').sudo().render_qweb_pdf([invoice_sudo.id])[0]
         pdfhttpheaders = [
             ('Content-Type', 'application/pdf'),
             ('Content-Length', len(pdf)),
         ]
         return request.make_response(pdf, headers=pdfhttpheaders)
+
+    # ------------------------------------------------------------
+    # My Home
+    # ------------------------------------------------------------
 
     def details_form_validate(self, data):
         error, error_message = super(PortalAccount, self).details_form_validate(data)

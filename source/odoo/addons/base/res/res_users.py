@@ -107,7 +107,7 @@ class Groups(models.Model):
                 return expression.AND(domains)
             else:
                 return expression.OR(domains)
-        if isinstance(operand, basestring):
+        if isinstance(operand, pycompat.string_types):
             lst = False
             operand = [operand]
         where = []
@@ -283,6 +283,13 @@ class Users(models.Model):
             raise ValidationError(_('The chosen company is not in the allowed companies for this user'))
 
     @api.multi
+    @api.constrains('action_id')
+    def _check_action_id(self):
+        action_open_website = self.env.ref('base.action_open_website', raise_if_not_found=False)
+        if action_open_website and any(user.action_id.id == action_open_website.id for user in self):
+            raise ValidationError(_('The "App Switcher" action cannot be selected as home action.'))
+
+    @api.multi
     def read(self, fields=None, load='_classic_read'):
         if fields and self == self.env.user:
             for key in fields:
@@ -306,7 +313,7 @@ class Users(models.Model):
 
     @api.model
     def read_group(self, domain, fields, groupby, offset=0, limit=None, orderby=False, lazy=True):
-        groupby_fields = set([groupby] if isinstance(groupby, basestring) else groupby)
+        groupby_fields = set([groupby] if isinstance(groupby, pycompat.string_types) else groupby)
         if groupby_fields.intersection(USER_PRIVATE_FIELDS):
             raise AccessError(_("Invalid 'group by' parameter"))
         return super(Users, self).read_group(domain, fields, groupby, offset=offset, limit=limit, orderby=orderby, lazy=lazy)
@@ -355,7 +362,7 @@ class Users(models.Model):
                 if user.partner_id.company_id and user.partner_id.company_id.id != values['company_id']:
                     user.partner_id.write({'company_id': user.company_id.id})
             # clear default ir values when company changes
-            self.env['ir.values'].get_defaults_dict.clear_cache(self.env['ir.values'])
+            self.env['ir.default'].clear_caches()
 
         # clear caches linked to the users
         if 'groups_id' in values:
@@ -681,24 +688,24 @@ class GroupsView(models.Model):
     def create(self, values):
         user = super(GroupsView, self).create(values)
         self._update_user_groups_view()
-        # ir_values.get_actions() depends on action records
-        self.env['ir.values'].clear_caches()
+        # actions.get_bindings() depends on action records
+        self.env['ir.actions.actions'].clear_caches()
         return user
 
     @api.multi
     def write(self, values):
         res = super(GroupsView, self).write(values)
         self._update_user_groups_view()
-        # ir_values.get_actions() depends on action records
-        self.env['ir.values'].clear_caches()
+        # actions.get_bindings() depends on action records
+        self.env['ir.actions.actions'].clear_caches()
         return res
 
     @api.multi
     def unlink(self):
         res = super(GroupsView, self).unlink()
         self._update_user_groups_view()
-        # ir_values.get_actions() depends on action records
-        self.env['ir.values'].clear_caches()
+        # actions.get_bindings() depends on action records
+        self.env['ir.actions.actions'].clear_caches()
         return res
 
     @api.model
@@ -744,8 +751,12 @@ class GroupsView(models.Model):
             xml2.append({'class': "o_label_nowrap"})
             xml = E.field(E.group(*(xml1), col="2"), E.group(*(xml2), col="4"), name="groups_id", position="replace")
             xml.addprevious(etree.Comment("GENERATED AUTOMATICALLY BY GROUPS"))
-            xml_content = etree.tostring(xml, pretty_print=True, xml_declaration=True, encoding="utf-8")
-            view.with_context(lang=None).write({'arch': xml_content, 'arch_fs': False})
+            xml_content = etree.tostring(xml, pretty_print=True, encoding="unicode")
+
+            new_context = dict(view._context)
+            new_context.pop('install_mode_data', None)  # don't set arch_fs for this computed view
+            new_context['lang'] = None
+            view.with_context(new_context).write({'arch': xml_content})
 
     def get_application_groups(self, domain):
         """ Return the non-share groups that satisfy ``domain``. """
@@ -766,7 +777,7 @@ class GroupsView(models.Model):
             # determine sequence order: a group appears after its implied groups
             order = {g: len(g.trans_implied_ids & gs) for g in gs}
             # check whether order is total, i.e., sequence orders are distinct
-            if len(set(pycompat.values(order))) == len(gs):
+            if len(set(order.values())) == len(gs):
                 return (app, 'selection', gs.sorted(key=order.get))
             else:
                 return (app, 'boolean', gs)
@@ -780,7 +791,7 @@ class GroupsView(models.Model):
                 others += g
         # build the result
         res = []
-        for app, gs in sorted(pycompat.items(by_app), key=lambda it: it[0].sequence or 0):
+        for app, gs in sorted(by_app.items(), key=lambda it: it[0].sequence or 0):
             res.append(linearize(app, gs))
         if others:
             res.append((self.env['ir.module.category'], 'boolean', others))
@@ -820,7 +831,7 @@ class UsersView(models.Model):
         add, rem = [], []
         values1 = {}
 
-        for key, val in pycompat.items(values):
+        for key, val in values.items():
             if is_boolean_group(key):
                 (add if val else rem).append(get_boolean_group(key))
             elif is_selection_groups(key):
@@ -950,6 +961,8 @@ class ChangePasswordUser(models.TransientModel):
     @api.multi
     def change_password_button(self):
         for line in self:
+            if not line.new_passwd:
+                raise UserError(_("Before clicking on 'Change Password', you have to write a new password."))
             line.user_id.write({'password': line.new_passwd})
         # don't keep temporary passwords in the database longer than necessary
         self.write({'new_passwd': False})

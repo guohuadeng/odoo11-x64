@@ -28,7 +28,8 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
           "override_session" is set to true.
      */
     init: function (parent, origin, options) {
-        mixins.EventDispatcherMixin.init.call(this, parent);
+        mixins.EventDispatcherMixin.init.call(this);
+        this.setParent(parent);
         options = options || {};
         this.module_list = (options.modules && options.modules.slice()) || (window.odoo._modules && window.odoo._modules.slice()) || [];
         this.server = null;
@@ -278,7 +279,7 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
             options.data.session_id = this.session_id;
         }
         options.session = this;
-        ajax.get_file(options);
+        return ajax.get_file(options);
     },
     /**
      * (re)loads the content of a session: db name, username, user id, session
@@ -290,10 +291,6 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
         var result = _.extend({}, window.odoo.session_info);
         delete result.session_id;
         _.extend(this, result);
-        if (this.tzOffset === false) {
-            // send by server to have the user timezone and not the browser timezone
-            this.tzOffset = -new Date().getTimezoneOffset();
-        }
         return $.when();
     },
     check_session_id: function () {
@@ -312,11 +309,8 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
             }).always(function () {
                 self.avoid_recursion = false;
             });
-        } else {
-            // normal use case, just use the cookie
-            self.session_id = utils.get_cookie("session_id");
-            return $.when();
         }
+        return $.when();
     },
     /**
      * Executes an RPC call, registering the provided callbacks.
@@ -328,8 +322,6 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
      * @param {String} url RPC endpoint
      * @param {Object} params call parameters
      * @param {Object} options additional options for rpc call
-     * @param {Function} success_callback function to execute on RPC call success
-     * @param {Function} error_callback function to execute on RPC call failure
      * @returns {jQuery.Deferred} jquery-provided ajax deferred
      */
     rpc: function (url, params, options) {
@@ -414,6 +406,17 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
             return path.length >= el.length && path.slice(0, el.length) === el;
         }) ? '' : this.prefix;
         return prefix + path + qs;
+    },
+    /**
+     * Returns the time zone difference (in minutes) from the current locale
+     * (host system settings) to UTC, for a given date. The offset is positive
+     * if the local timezone is behind UTC, and negative if it is ahead.
+     *
+     * @param {string | moment} date a valid string date or moment instance
+     * @returns {integer}
+     */
+    getTZOffset: function (date) {
+        return -new Date(date).getTimezoneOffset();
     },
 });
 

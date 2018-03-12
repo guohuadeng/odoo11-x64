@@ -4,7 +4,6 @@
 from datetime import datetime
 
 from odoo import api, fields, models, tools, SUPERUSER_ID
-from odoo.tools import pycompat
 from odoo.tools.translate import _
 from odoo.exceptions import UserError
 
@@ -90,7 +89,6 @@ class Applicant(models.Model):
     _description = "Applicant"
     _order = "priority desc, id desc"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
-    _mail_mass_mailing = _('Applicants')
 
     def _default_stage_id(self):
         if self._context.get('default_job_id'):
@@ -151,7 +149,7 @@ class Applicant(models.Model):
     reference = fields.Char("Referred By")
     day_open = fields.Float(compute='_compute_day', string="Days to Open")
     day_close = fields.Float(compute='_compute_day', string="Days to Close")
-    delay_close = fields.Float(compute="_compute_day", string='Delay to Close', readonly=True, group_operator="avg", help="Number of Delay to close", store=True)
+    delay_close = fields.Float(compute="_compute_day", string='Delay to Close', readonly=True, group_operator="avg", help="Number of days to close", store=True)
     color = fields.Integer("Color Index", default=0)
     emp_id = fields.Many2one('hr.employee', string="Employee", track_visibility="onchange", help="Employee linked to the applicant.")
     user_email = fields.Char(related='user_id.email', type="char", string="User Email", readonly=True)
@@ -251,7 +249,7 @@ class Applicant(models.Model):
             self = self.with_context(default_department_id=vals.get('department_id'))
         if vals.get('job_id') or self._context.get('default_job_id'):
             job_id = vals.get('job_id') or self._context.get('default_job_id')
-            for key, value in pycompat.items(self._onchange_job_id_internal(job_id)['value']):
+            for key, value in self._onchange_job_id_internal(job_id)['value'].items():
                 if key not in vals:
                     vals[key] = value
         if vals.get('user_id'):
