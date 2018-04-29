@@ -6,8 +6,8 @@
 # Wanradt Koell <wanradt@gmail.com>, 2017
 # Arma Gedonsky <armagedonsky@hot.ee>, 2017
 # Martin Trigaux, 2017
-# Rivo Zängov <eraser@eraser.ee>, 2017
 # Eneli Õigus <enelioigus@gmail.com>, 2017
+# Rivo Zängov <eraser@eraser.ee>, 2017
 # Egon Raamat <egon@avalah.ee>, 2017
 # Marek Pontus, 2018
 msgid ""
@@ -222,7 +222,7 @@ msgstr ""
 #. module: website_quote
 #: model:ir.ui.view,arch_db:website_quote.report_saleorder_validity_date
 msgid "<strong>Expiration Date:</strong>"
-msgstr ""
+msgstr "<strong>Aegumiskuupäev:</strong>"
 
 #. module: website_quote
 #: model:product.product,quote_description:website_quote.product_product_quote_2
@@ -534,7 +534,7 @@ msgstr "Loonud"
 #: model:ir.model.fields,field_description:website_quote.field_sale_quote_option_create_date
 #: model:ir.model.fields,field_description:website_quote.field_sale_quote_template_create_date
 msgid "Created on"
-msgstr "Loodud"
+msgstr "Loomise kuupäev"
 
 #. module: website_quote
 #: model:ir.ui.view,arch_db:website_quote.so_quotation_content
@@ -642,7 +642,7 @@ msgstr "Muuda näidispõhja"
 #. module: website_quote
 #: model:ir.ui.view,arch_db:website_quote.so_quotation_content
 msgid "Expiration Date:"
-msgstr ""
+msgstr "Aegumiskuupäev:"
 
 #. module: website_quote
 #: model:ir.model,name:website_quote.model_ir_model_fields
@@ -1256,7 +1256,7 @@ msgstr "Müügipakkumise põhi"
 #. module: website_quote
 #: model:ir.model,name:website_quote.model_sale_order_line
 msgid "Sales Order Line"
-msgstr "Müügikorralduse rida"
+msgstr "Müügitellimuse rida"
 
 #. module: website_quote
 #: model:ir.model.fields,field_description:website_quote.field_sale_order_option_order_id
@@ -1643,7 +1643,7 @@ msgstr ""
 #. module: website_quote
 #: model:ir.ui.view,arch_db:website_quote.payment_confirmation_status
 msgid "Your payment has been authorized."
-msgstr ""
+msgstr "Teie makse on autoriseeritud"
 
 #. module: website_quote
 #: model:ir.ui.view,arch_db:website_quote.so_quotation

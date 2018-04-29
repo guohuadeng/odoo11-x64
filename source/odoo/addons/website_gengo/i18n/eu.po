@@ -4,13 +4,14 @@
 # 
 # Translators:
 # Martin Trigaux, 2017
+# Naomi Hidalgo <naomihid96@gmail.com>, 2018
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 10.saas~18\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-09-20 09:54+0000\n"
 "PO-Revision-Date: 2017-09-20 09:54+0000\n"
-"Last-Translator: Martin Trigaux, 2017\n"
+"Last-Translator: Naomi Hidalgo <naomihid96@gmail.com>, 2018\n"
 "Language-Team: Basque (https://www.transifex.com/odoo/teams/41243/eu/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -23,28 +24,28 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:144
 #, python-format
 msgid "- Enable if you using testing account"
-msgstr ""
+msgstr "- Gaitu proba-kontua erabiltzen baduzu"
 
 #. module: website_gengo
 #. openerp-web
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:138
 #, python-format
 msgid "- Jobs are Automatically Approved by Gengo."
-msgstr ""
+msgstr "- Enpleguak automatikoki Gengo-k onartzen ditu."
 
 #. module: website_gengo
 #. openerp-web
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:118
 #, python-format
 msgid "1. Go To your"
-msgstr ""
+msgstr "1. Joan zure "
 
 #. module: website_gengo
 #. openerp-web
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:119
 #, python-format
 msgid "2. Then paste generated keys in given form"
-msgstr ""
+msgstr "2. Ondoren itsatsi sortutako pasahitzak emandako eran"
 
 #. module: website_gengo
 #. openerp-web
@@ -65,7 +66,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:4
 #, python-format
 msgid "Auto Translate"
-msgstr ""
+msgstr "Automatikoki itzuli "
 
 #. module: website_gengo
 #. openerp-web
@@ -127,7 +128,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:43
 #, python-format
 msgid "Do not show this dialog later."
-msgstr ""
+msgstr "Ez erakutsi elkarrizketa lauki hau geroago."
 
 #. module: website_gengo
 #. openerp-web
@@ -141,14 +142,14 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:114
 #, python-format
 msgid "Gengo API is not configured"
-msgstr ""
+msgstr "Gengo API ez dago konfiguratuta "
 
 #. module: website_gengo
 #. openerp-web
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:94
 #, python-format
 msgid "Gengo Dashboard"
-msgstr ""
+msgstr "Gengo arbela "
 
 #. module: website_gengo
 #. openerp-web
@@ -169,7 +170,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:20
 #, python-format
 msgid "Here are the visuals used to help you translate efficiently:"
-msgstr ""
+msgstr "Hona hemen eraginkortasunez itzultzeko lagungarri diren irudiak:"
 
 #. module: website_gengo
 #. openerp-web
@@ -193,7 +194,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:132
 #, python-format
 msgid "Paste private key here"
-msgstr ""
+msgstr "Itsatsi pasahitza hemen"
 
 #. module: website_gengo
 #. openerp-web
@@ -207,14 +208,14 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:75
 #, python-format
 msgid "Post"
-msgstr ""
+msgstr "Posta"
 
 #. module: website_gengo
 #. openerp-web
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:130
 #, python-format
 msgid "Private key"
-msgstr ""
+msgstr "Pasahitza "
 
 #. module: website_gengo
 #. openerp-web
@@ -228,7 +229,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:123
 #, python-format
 msgid "Public key"
-msgstr ""
+msgstr "Pasahitz publikoa "
 
 #. module: website_gengo
 #. openerp-web
@@ -242,7 +243,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:62
 #, python-format
 msgid "Select Gengo Translation Service Level"
-msgstr ""
+msgstr "Aukeratu Gengo itzulpen zerbitzuaren maila"
 
 #. module: website_gengo
 #. openerp-web
@@ -256,7 +257,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:117
 #, python-format
 msgid "Steps for configure Gengo"
-msgstr ""
+msgstr "Gengo konfiguratzeko urratsak "
 
 #. module: website_gengo
 #. openerp-web
@@ -298,7 +299,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:89
 #, python-format
 msgid "Translator statistics for this page"
-msgstr ""
+msgstr "Itzulpen estatistikoak orrialde honetarako "
 
 #. module: website_gengo
 #. openerp-web
@@ -319,7 +320,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:97
 #, python-format
 msgid "Words in progress"
-msgstr ""
+msgstr "Hitzak prozesuan "
 
 #. module: website_gengo
 #. openerp-web
@@ -340,7 +341,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:118
 #, python-format
 msgid "and generate API Keys."
-msgstr ""
+msgstr "eta API gakoak sortu."
 
 #. module: website_gengo
 #: model:ir.model,name:website_gengo.model_base_gengo_translations
@@ -352,7 +353,7 @@ msgstr ""
 #: code:addons/website_gengo/static/src/xml/website.gengo.xml:24
 #, python-format
 msgid "for translation."
-msgstr ""
+msgstr "itzulpena egiteko."
 
 #. module: website_gengo
 #. openerp-web

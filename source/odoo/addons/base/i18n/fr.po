@@ -18,7 +18,6 @@
 # Xavier Belmere <Info@cartmeleon.com>, 2017
 # Lionel Sausin <ls@numerigraphe.com>, 2017
 # Florian Hatat, 2017
-# Lamia Ishak <lamiaishak@hotmail.co.uk>, 2017
 # Christophe Dubuit <cdubuit@yahoo.com>, 2017
 # Bertrand LATOUR <divoir@gmail.com>, 2017
 # nthnnl <nathan070@me.com>, 2017
@@ -1923,7 +1922,7 @@ msgstr ""
 "    * Bulletins de l'employé\n"
 "    * Registre mensuel de paie\n"
 "    * Intégré à la gestion des congés\n"
-"    * Salaire MAJ, ONSS, retenue d'impôt, allocation enfant…\n"
+"    * Mises à jour de salaire, ONSS, retenue d'impôt, allocation enfant…\n"
 "    "
 
 #. module: base
@@ -3023,7 +3022,7 @@ msgid ""
 "    "
 msgstr ""
 "\n"
-"Intégrez Github à Odoo Discuss.\n"
+"Intégrez Github à Odoo Discussion.\n"
 "======================================\n"
 "\n"
 "Ce module intègre toutes les validations de publications, les demandes d'extraction et l'activité github dans des canaux sur Odoo.\n"
@@ -3389,7 +3388,7 @@ msgstr ""
 "Vous pouvez choisir parmi plusieurs modes de facturation :\n"
 "\n"
 "* *À la demande* : les factures sont créées manuellement à partir des commandes client, selon les besoins\n"
-"* *À la livraison* : les factures sont générées au moment de la récupération (livraison)\n"
+"* *À la livraison* : les factures sont générées au moment de la livraison (à partir du bon de livraison)\n"
 "* *Avant livraison* : une facture brouillon est créée et doit être réglée avant la livraison\n"
 "\n"
 "Avec ce module, vous pouvez personnaliser les rapports sur les commandes clients et les factures en y ajoutant\n"
@@ -5827,19 +5826,18 @@ msgid ""
 "       the spreading, for the selected Analytic Accounts of Budgets.\n"
 msgstr ""
 "\n"
-"Module permettant aux comptables de gérer les budgets analytiques et croisés.\n"
-"================================================== ========================\n"
+"Module permettant aux comptables de gérer les budgets analytiques et croisés\n"
+"============================================================================\n"
 "\n"
-"  Une fois que les budgets sont définis (dans Facturation / Budgets / Budgets), les gestionnaires de projet peuvent fixer le montant prévu sur chaque compte analytique.\n"
+"Une fois que les budgets sont définis (dans Facturation / Budgets / Budgets), les gestionnaires de projet peuvent fixer le montant prévu sur chaque compte analytique.\n"
 "\n"
 "Le comptable a la possibilité de voir le total des prévisions de chaque budget afin d'assurer que le total prévu n'est ni supérieur ni inférieur à ce qu'il avait planifié. Chaque budget peut être visualisé sous forme de vue graphique.\n"
 "\n"
-"  Trois rapports sont disponibles:\n"
-"  ----------------------------\n"
-"  1. Le premier est réalisé à partir d'une liste des budgets. Il donne la répartition des comptes analytiques pour ces budgets.\n"
+"Trois rapports sont disponibles:\n"
+"--------------------------------\n"
 "\n"
-"  2. Le second est un résumé du précédent, il donne la répartition par comptes analytiques budgétaires sélectionnés\n"
-"\n"
+"1. Le premier est réalisé à partir d'une liste des budgets. Il donne la répartition des comptes analytiques pour ces budgets.\n"
+"2. Le second est un résumé du précédent, il donne la répartition par comptes analytiques budgétaires sélectionnés\n"
 "3. Le dernier est réalisé à partir du plan comptable analytique. Il donne la répartition, pour les comptes analytiques budgétaires sélectionnés.\n"
 
 #. module: base
@@ -8648,7 +8646,7 @@ msgstr "Lecture et analyse de Codes barre"
 #: model:ir.ui.view,arch_db:base.view_model_fields_search
 #: model:ir.ui.view,arch_db:base.view_model_search
 msgid "Base"
-msgstr "Base de calcul"
+msgstr "Base"
 
 #. module: base
 #: selection:ir.model.fields,state:0
@@ -9417,7 +9415,7 @@ msgstr "Adresses municipales"
 #. module: base
 #: selection:res.company,external_report_layout:0
 msgid "Clean"
-msgstr "Nettoyer"
+msgstr "Épuré"
 
 #. module: base
 #: model:ir.actions.act_window,help:base.action_attachment
@@ -9976,7 +9974,7 @@ msgstr "Impossible de créer un contact sans adresse électronique !"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_model_count
 msgid "Count (incl. archived)"
-msgstr "Nombre (y compris les éléments archivés)"
+msgstr "Nombre (avec archives)"
 
 #. module: base
 #: model:ir.actions.act_window,name:base.action_country
@@ -10467,7 +10465,7 @@ msgstr "Les champs personnalisés doivent avoir un nom commençant par 'x_' !"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_country_name_position
 msgid "Customer Name Position"
-msgstr "Nom et position du client"
+msgstr "Position du nom du client"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_portal
@@ -11259,7 +11257,7 @@ msgid ""
 " is a customer without access or with a limited access created for sharing "
 "data."
 msgstr ""
-"Le client (aucun utilisateur) ou l'utilisateur partagé a indiqué que le "
+"Client (pas un utilisateur) ou utilisateur partagé. Indique que le "
 "partenaire actuel est un client qui ne dispose pas d'accès ou qui dispose "
 "d'un accès limité pour le partage des données."
 
@@ -12614,7 +12612,7 @@ msgstr ""
 "Google Agenda\n"
 "---------------\n"
 "\n"
-"Grâce au plugin Google\\_calendar, vous pouvez synchroniser votre agenda Odoo avec Google Agenda.\n"
+"Grâce au plugin Google Agenda, vous pouvez synchroniser votre agenda Odoo avec Google Agenda.\n"
 "\n"
 "\n"
 
@@ -13521,7 +13519,7 @@ msgstr "Implémentation"
 #. module: base
 #: model:ir.module.module,summary:base.module_base_sparse_field
 msgid "Implementation of sparse fields."
-msgstr "Mise en œuvre de champs isolés."
+msgstr "Mise en œuvre de champs creux."
 
 #. module: base
 #: model:ir.module.module,summary:base.module_pos_blackbox_be
@@ -16163,7 +16161,7 @@ msgstr ""
 "\n"
 "Traduisez facilement vos articles de blog en plusieurs langues. Notre\n"
 "fonctionnalité de traduction « à la demande » vous permet de faire appel à des traducteurs\n"
-"professionnels pour traduire automatiquement toutes les modifications que vous apportez (\\0,05 $ par mot)\n"
+"professionnels pour traduire automatiquement toutes les modifications que vous apportez (p. ex. 0,04 € par mot)\n"
 "Les différentes versions sont automatiquement mises à jour une fois traduites par des professionnels\n"
 "(environ 32 heures).\n"
 "\n"
@@ -17037,7 +17035,7 @@ msgstr ""
 "-------------------\n"
 "\n"
 "Obtenez les informations dont vous avez besoin pour créer une campagne marketing plus intelligente. Suivez les statistiques\n"
-"par campagne : taux de retour, e-mails envoyés, meilleur contenu, etc. Les tableaux de bord clairs\n"
+"par campagne : taux de rebond, e-mails envoyés, meilleur contenu, etc. Les tableaux de bord clairs\n"
 "vous donnent un aperçu direct des performances de votre campagne.\n"
 "\n"
 "Intégration complète avec d'autres applications\n"
@@ -17357,7 +17355,7 @@ msgstr ""
 "\n"
 "### Un gain de productivité\n"
 "\n"
-"Que ce soit pour un restaurant ou un magasin, vous pouvez activer simultanément plusieurs tickets\n"
+"Que ce soit pour un restaurant ou un magasin, vous pouvez traiter simultanément plusieurs commandes\n"
 "pour ne pas faire attendre vos clients.\n"
 "\n"
 "### Des recherches ultra rapides\n"
@@ -17385,7 +17383,7 @@ msgstr ""
 "----------------------------------\n"
 "\n"
 "Créez des factures client en seulement quelques clics. Contrôlez les ventes et la trésorerie en temps\n"
-"réel et utilisez le puissant outil de création de rapport d'Odoo pour prendre des décisions plus avisées et améliorer le\n"
+"réel et utilisez le puissant outil de création de rapports d'Odoo pour prendre des décisions plus avisées et améliorer le\n"
 "rendement de votre magasin.\n"
 "\n"
 "Plus besoin d'intégrer des logiciels : inscrivez automatiquement toutes vos ventes et\n"
@@ -20788,7 +20786,7 @@ msgstr "Self"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_helpdesk_sale_timesheet
 msgid "Sell Helpdesk Timesheet"
-msgstr "Vendre la feuille de temps de l'assistance"
+msgstr "Vendre une assistance à consigner dans les feuilles de temps"
 
 #. module: base
 #: model:ir.module.module,summary:base.module_website_sale
@@ -23704,7 +23702,7 @@ msgstr "Éditeur Web"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_enterprise
 msgid "Web Enterprise"
-msgstr "Web Enterprise"
+msgstr "Module Web Entreprise"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_gantt
@@ -23764,7 +23762,7 @@ msgstr "Site Web Constructeur de Formulaires"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_helpdesk_form
 msgid "Website Form Helpdesk"
-msgstr "Assistance du site Web par formulaire"
+msgstr "Assistance par formulaire sur le site Web"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_gengo
@@ -23784,7 +23782,7 @@ msgstr "Assistance du site Web"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_helpdesk_livechat
 msgid "Website IM Livechat Helpdesk"
-msgstr "Assistance du site Web par discussion instantanée"
+msgstr "Assistance par discussion instantanée sur le site Web "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_links
@@ -23854,7 +23852,7 @@ msgstr "Stock et Options de vente sur le site Web"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_helpdesk_slides
 msgid "Website Slides Helpdesk"
-msgstr "Assistance du site Web par diapositives"
+msgstr "Assistance par le biais de diapositives sur le site Web"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_studio

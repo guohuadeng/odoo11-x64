@@ -4,13 +4,14 @@
 # 
 # Translators:
 # Manuela Silva <manuela.silva@sky.com>, 2017
+# Nuno Silva <nuno.silva@arxi.pt>, 2018
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 10.saas~18\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-09-20 09:54+0000\n"
 "PO-Revision-Date: 2017-09-20 09:54+0000\n"
-"Last-Translator: Manuela Silva <manuela.silva@sky.com>, 2017\n"
+"Last-Translator: Nuno Silva <nuno.silva@arxi.pt>, 2018\n"
 "Language-Team: Portuguese (https://www.transifex.com/odoo/teams/41243/pt/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -86,6 +87,9 @@ msgid ""
 "placement=\"top\" title=\"Defines the context of your link. It might be an "
 "event you want to promote or a special promotion.\"/>"
 msgstr ""
+"Campanha <i class=\"fa fa-info-circle\" data-toggle=\"tooltip\" data-"
+"placement=\"top\" title=\"Defines the context of your link. It might be an "
+"event you want to promote or a special promotion.\"/>"
 
 #. module: website_links
 #. openerp-web
@@ -109,12 +113,12 @@ msgstr ""
 #. module: website_links
 #: model:ir.ui.view,arch_db:website_links.graphs
 msgid "Last Month"
-msgstr ""
+msgstr "Último Mês"
 
 #. module: website_links
 #: model:ir.ui.view,arch_db:website_links.graphs
 msgid "Last Week"
-msgstr ""
+msgstr "Semana Passada"
 
 #. module: website_links
 #: model:ir.ui.view,arch_db:website_links.create_shorten_url
@@ -138,7 +142,7 @@ msgstr ""
 #. module: website_links
 #: model:ir.ui.view,arch_db:website_links.create_shorten_url
 msgid "Newest"
-msgstr ""
+msgstr "Mais Recente"
 
 #. module: website_links
 #: model:ir.ui.view,arch_db:website_links.create_shorten_url

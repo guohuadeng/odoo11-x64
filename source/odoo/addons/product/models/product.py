@@ -149,6 +149,9 @@ class ProductProduct(models.Model):
         ('barcode_uniq', 'unique(barcode)', "A barcode can only be assigned to one product !"),
     ]
 
+    def _get_invoice_policy(self):
+        return False
+
     def _compute_product_price(self):
         prices = {}
         pricelist_id_or_name = self._context.get('pricelist')
@@ -428,7 +431,12 @@ class ProductProduct(models.Model):
                     limit2 = (limit - len(products)) if limit else False
                     products += self.search(args + [('name', operator, name), ('id', 'not in', products.ids)], limit=limit2)
             elif not products and operator in expression.NEGATIVE_TERM_OPERATORS:
-                products = self.search(args + ['&', ('default_code', operator, name), ('name', operator, name)], limit=limit)
+                domain = expression.OR([
+                    ['&', ('default_code', operator, name), ('name', operator, name)],
+                    ['&', ('default_code', '=', False), ('name', operator, name)],
+                ])
+                domain = expression.AND([args, domain])
+                products = self.search(domain, limit=limit)
             if not products and operator in positive_operators:
                 ptrn = re.compile('(\[(.*?)\])')
                 res = ptrn.search(name)

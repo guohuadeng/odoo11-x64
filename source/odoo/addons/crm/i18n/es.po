@@ -14,8 +14,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-19 13:42+0000\n"
-"PO-Revision-Date: 2018-02-19 13:42+0000\n"
+"POT-Creation-Date: 2018-04-20 11:58+0000\n"
+"PO-Revision-Date: 2018-04-20 11:58+0000\n"
 "Last-Translator: Martin Trigaux, 2018\n"
 "Language-Team: Spanish (https://www.transifex.com/odoo/teams/41243/es/)\n"
 "MIME-Version: 1.0\n"
@@ -149,7 +149,7 @@ msgstr ""
 "                        <td style=\"padding:15px 10px;font-size:20px\">\n"
 "                            <p style=\"color:#875A7B;margin:0\" >¡Genial!</p><br>\n"
 "                            <p dir=\"ltr\" style=\"font-size:15px;margin-top:0pt;margin-bottom:0pt;\">\n"
-"                                <span>Su aplicación Odoo CRM ya está en marcha.</span></p><br>\n"
+"                                <span>Su aplicación CRM de Odoo ya está en marcha.</span></p><br>\n"
 "                            <p dir=\"ltr\" style=\"margin-top:0pt;margin-bottom:8pt;\">\n"
 "                                <span style=\"font-size:13px;font-weight:bold; \">¿Cuál es el siguiente paso?</span></p>\n"
 "                            <ul style=\"margin-top:0pt;margin-bottom:0pt;font-size:13px;list-style-type:disc;\">\n"
@@ -209,7 +209,7 @@ msgstr ""
 "                            <p dir=\"ltr\" style=\"font-size:13px;margin-top:0pt;margin-bottom:8pt;\">\n"
 "                                <span>Le acompañamos en cada etapa del proceso. Póngase en contacto con nosotros a través del\n"
 "                                <a href=\"https://www.odoo.com/help\">formulario de soporte</a> si tiene alguna duda.\n"
-"                                También puede descubrir cómo sacar el máximo partido a Odoo CRM en nuestra </span>\n"
+"                                También puede descubrir cómo sacar el máximo partido a CRM de Odoo en nuestra </span>\n"
 "                                <a target=\"_blank\" href=\"https://www.odoo.com/documentation/user/11.0/crm.html\">\n"
 "                                <span style=\"text-decoration:underline;\">Documentación del usuario</span></a>\n"
 "                                </span><span> o nuestra </span>\n"
@@ -630,7 +630,7 @@ msgid ""
 "                                    <span>(Salesperson)</span>"
 msgstr ""
 "<span class=\"panel-title\"><span data-icon=\"\"/><strong> Ejercicio 3</strong></span>\n"
-"                                    <span>(Vendedor)</span>"
+"                                    <span>(comercial)</span>"
 
 #. module: crm
 #: model:ir.ui.view,arch_db:crm.crm_planner
@@ -1060,7 +1060,7 @@ msgstr ""
 "forma continua el rendimiento de las ventas."
 
 #. module: crm
-#: code:addons/crm/wizard/base_partner_merge.py:274
+#: code:addons/crm/wizard/base_partner_merge.py:273
 #, python-format
 msgid ""
 "All contacts must have the same email. Only the Administrator can merge "
@@ -1070,7 +1070,7 @@ msgstr ""
 "Sólo el administrador puede combinar contactos con diferentes direcciones."
 
 #. module: crm
-#: code:addons/crm/models/crm_lead.py:905
+#: code:addons/crm/models/crm_lead.py:916
 #, python-format
 msgid ""
 "All email incoming to %s will automatically\n"
@@ -2176,7 +2176,7 @@ msgstr "Forzar asignación"
 
 #. module: crm
 #: model:ir.ui.view,arch_db:crm.res_config_settings_view_form
-msgid "Formats phone numbers"
+msgid "Format phone numbers based on national conventions"
 msgstr ""
 
 #. module: crm
@@ -2666,7 +2666,7 @@ msgstr ""
 #. module: crm
 #: model:ir.filters,name:crm.filter_opportunity_salesperson
 msgid "Leads By Salespersons"
-msgstr "Iniciativas por vendedores"
+msgstr "Iniciativas por comerciales"
 
 #. module: crm
 #: model:ir.ui.view,arch_db:crm.crm_case_form_view_leads
@@ -3078,7 +3078,7 @@ msgstr "Ninguna actividad siguiente planeada"
 #: model:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
 #: model:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
 msgid "No salesperson"
-msgstr "Sin vendedor"
+msgstr "Sin comercial"
 
 #. module: crm
 #: selection:crm.lead,priority:0 selection:crm.opportunity.report,priority:0
@@ -3438,8 +3438,8 @@ msgstr "Teléfono"
 
 #. module: crm
 #: model:ir.model.fields,field_description:crm.field_res_config_settings_module_crm_phone_validation
-msgid "Phone Validation"
-msgstr "Validación de teléfono"
+msgid "Phone Formatting"
+msgstr ""
 
 #. module: crm
 #. openerp-web
@@ -3789,7 +3789,7 @@ msgstr "Vendedores"
 #: model:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
 #: model:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
 msgid "Salesperson"
-msgstr "Vendedor"
+msgstr "Comercial"
 
 #. module: crm
 #: model:ir.ui.view,arch_db:crm.crm_planner
