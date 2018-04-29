@@ -6,6 +6,7 @@
 /odoofile
 .log
 /addons_ent
+/addons_ent_remove
 /myaddons
 odoo-server.log
 app.conf
