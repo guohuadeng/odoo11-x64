@@ -5,3 +5,8 @@
 /file
 /odoofile
 .log
+/addons_ent
+/myaddons
+odoo-server.log
+app.conf
+odoofile/filestore
