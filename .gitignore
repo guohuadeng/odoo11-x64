@@ -8,6 +8,7 @@
 /addons_ent
 /addons_ent_remove
 /myaddons
+/myconf
 odoo-server.log
 app.conf
 odoofile/filestore
