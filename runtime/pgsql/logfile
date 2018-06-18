@@ -1382,3 +1382,19 @@
 日志:  多事务成员回卷保护现在被启用。
 日志:  数据库系统准备接受连接
 日志:  已启动autovacuum
+致命错误:  无法打开目录 "pg_tblspc": No such file or directory
+日志:  数据库系统已关闭
+致命错误:  无法打开目录 "pg_tblspc": No such file or directory
+日志:  数据库系统已关闭
+致命错误:  无法打开目录 "pg_tblspc": No such file or directory
+日志:  数据库系统已关闭
+致命错误:  无法打开目录 "pg_tblspc": No such file or directory
+日志:  数据库系统已关闭
+致命错误:  无法打开目录 "pg_tblspc": No such file or directory
+日志:  数据库系统已关闭
+致命错误:  无法打开目录 "pg_tblspc": No such file or directory
+日志:  数据库系统已关闭
+日志:  数据库上次关闭时间为 2018-06-19 01:56:38 HKT
+日志:  多事务成员回卷保护现在被启用。
+日志:  已启动autovacuum
+日志:  数据库系统准备接受连接

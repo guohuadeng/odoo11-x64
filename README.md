@@ -11,7 +11,7 @@ http://www.sunpop.cn/odoo11_fast_x64_download/
 1. python 3.5.2 ,64位
 2. postgresql 9.6.4 ,64位
 3. Nginx 1.12.1， 32位
-4. Odoo 11，20180430版本。
+4. Odoo 11，20180618版本。
 
 ## 操作说明
 - 执行 r.bat后，访问 http://localhost
@@ -29,7 +29,10 @@ extra 依赖文件目录，如果要自行安装涉及到的库，其它如果�
 ```
 ## 如果遇到问题，请首先尝试处理Postgresql,进入bin目录执行环境初始化
 ```
-cd runtime\pgsql\bin
+cd runtime\pgsql\
+del /q /s .\data
+rd /q /s .\data
+cd bin
 initdb.exe -D ..\data -E UTF8
 pg_ctl -D ..\data -l logfile start
 ```
