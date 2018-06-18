@@ -247,6 +247,11 @@ msgid ""
 "                                        <span class=\"small\">Recommended if &gt;100 products</span>\n"
 "                                    </span>"
 msgstr ""
+"<span class=\"panel-title\">\n"
+"                                        <span class=\"fa\" data-icon=\"\"/>\n"
+"                                        <strong>Importă un fișier</strong><br/>\n"
+"                                        <span class=\"small\">Recomandat pentru &gt;100 produse</span>\n"
+"                                    </span>"
 
 #. module: stock
 #: model:ir.ui.view,arch_db:stock.inventory_planner
@@ -621,7 +626,7 @@ msgstr ""
 #. module: stock
 #: model:ir.ui.view,arch_db:stock.message_head
 msgid "<strong>The initial demand has been updated.</strong>"
-msgstr ""
+msgstr "<strong>Cantitatea cerută inițial a fost actualizată.</strong>"
 
 #. module: stock
 #: model:ir.ui.view,arch_db:stock.report_inventory
@@ -3246,6 +3251,7 @@ msgstr ""
 msgid ""
 "It is not possible to reserve more products of %s than you have in stock."
 msgstr ""
+"Nu este posibil să rezervați mai multe produse de  %s decât sunt în stoc."
 
 #. module: stock
 #: code:addons/stock/models/stock_quant.py:256
@@ -4649,7 +4655,7 @@ msgstr "Pivot"
 #. module: stock
 #: model:ir.ui.view,arch_db:stock.stock_picking_type_kanban
 msgid "Planned Transfer"
-msgstr ""
+msgstr "Transfer planificat"
 
 #. module: stock
 #: model:ir.model,name:stock.model_web_planner
@@ -5585,7 +5591,7 @@ msgstr "Mișcare rebuturi"
 #. module: stock
 #: model:ir.actions.act_window,name:stock.action_stock_scrap
 msgid "Scrap Orders"
-msgstr ""
+msgstr "Declarare rebut"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_move_scrapped
@@ -5599,6 +5605,9 @@ msgid ""
 "Scrapping a product will remove it from your stock. The product will\n"
 "                end up in a scrap location that can be used for reporting purpose."
 msgstr ""
+"Prin declararea de rebut a unui produs acesta sa va elimina din stoc. "
+"Produsul va ajunge la final într-o locație de rebuturi care poate fi "
+"utilizată în scopuri de raportare."
 
 #. module: stock
 #: model:ir.ui.view,arch_db:stock.view_picking_form
@@ -6244,6 +6253,8 @@ msgid ""
 "The backorder <a href=# data-oe-model=stock.picking data-oe-id=%d>%s</a> has"
 " been created."
 msgstr ""
+"Restanța <a href=# data-oe-model=stock.picking data-oe-id=%d>%s</a>a fost "
+"creată."
 
 #. module: stock
 #: sql_constraint:stock.location:0
@@ -6542,6 +6553,10 @@ msgid ""
 "returned picking in order to avoid logistic rules to be applied again (which"
 " would create duplicated operations)"
 msgstr ""
+"Această preluare pare să fie înlănțuită cu o altă operație. Mai târziu, dacă"
+" primiți mărfurile pe care le returnați acum, asigurați-vă că ați <b> "
+"inversat </b> preluarea returnată, pentru a evita aplicarea din nou a "
+"regulilor logisticii (ceea ce ar crea operațiuni duplicate)"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_change_product_qty_new_quantity
@@ -6780,7 +6795,7 @@ msgstr "Tip operație"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_res_config_settings_module_delivery_ups
 msgid "UPS"
-msgstr ""
+msgstr "UPS"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_res_config_settings_module_delivery_usps
@@ -7293,6 +7308,11 @@ msgid ""
 "valuate your stock or change its rounding precision to a smaller value "
 "(example: 0.00001)."
 msgstr ""
+"Utilizați o unitate de măsură mai mică decât cea utilizată pentru stocarea "
+"produsului. Acest lucru poate duce la o problemă de rotunjire a cantității "
+"rezervate! Ar trebui să utilizați o unitate de măsură mai mică posibilă "
+"pentru stocare sau a schimba precizia de rotunjire la o valoare mai mică "
+"(exemplu: 0.00001)."
 
 #. module: stock
 #: model:ir.actions.act_window,help:stock.action_routes_form
@@ -7471,6 +7491,7 @@ msgid ""
 "You cannot validate a transfer if you have not processed any quantity for "
 "%s."
 msgstr ""
+"Nu puteți valida un transfer dacă nu ați procesat nicio cantitate pentru %s."
 
 #. module: stock
 #: code:addons/stock/models/stock_picking.py:656

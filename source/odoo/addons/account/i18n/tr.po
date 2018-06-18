@@ -6,13 +6,14 @@
 # Murat Kaplan <muratk@projetgrup.com>, 2017
 # Ertuğrul Güreş <ertugrulg@projetgrup.com>, 2017
 # Umur Akın <umura@projetgrup.com>, 2018
+# Martin Trigaux, 2018
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-04-27 14:47+0000\n"
 "PO-Revision-Date: 2018-04-27 14:47+0000\n"
-"Last-Translator: Umur Akın <umura@projetgrup.com>, 2018\n"
+"Last-Translator: Martin Trigaux, 2018\n"
 "Language-Team: Turkish (https://www.transifex.com/odoo/teams/41243/tr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -28,6 +29,10 @@ msgid ""
 " * The 'Paid' status is set automatically when the invoice is paid. Its related journal entries may or may not be reconciled.\n"
 " * The 'Cancelled' status is used when user cancel invoice."
 msgstr ""
+" * 'Taslak' durumu, bir kullanıcı yeni yada onaylanmamış bir fatura hazırlıyorsa kullanılır.\n"
+" * 'Açık' durumu, kullanıcı bir fatura oluştururken kullanılır, fatura numarası oluşturulur. Kullanıcı faturayı ödeyinceye kadar açık durumdadır.\n"
+" * 'Ödendi' durumu, fatura ödenince otomatik olarak ayarlanır. Yevmiye girişlerinin uzlaştırılımış  yada uzlaştırılmamış olmasıyla ilgilidir.\n"
+" * 'İptal edildi' durumu kullanıcı bir faturayı iptal ettiğinde kullanılır."
 
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_chart_template_code_digits
@@ -1689,17 +1694,17 @@ msgstr "Vergi Düzeltme"
 #. module: account
 #: model:ir.model.fields,field_description:account.field_tax_adjustments_wizard_adjustment_type
 msgid "Adjustment Type"
-msgstr ""
+msgstr "Düzeltme Türü"
 
 #. module: account
 #: selection:tax.adjustments.wizard,adjustment_type:0
 msgid "Adjustment in favor of the Estate"
-msgstr ""
+msgstr "Emlak lehine ayarla"
 
 #. module: account
 #: selection:tax.adjustments.wizard,adjustment_type:0
 msgid "Adjustment in your favor"
-msgstr ""
+msgstr "Sizin lehinize ayarlama"
 
 #. module: account
 #: model:ir.ui.view,arch_db:account.view_account_tax_template_form
@@ -2416,7 +2421,7 @@ msgstr "Banka Hesap Özeti"
 #: code:addons/account/models/account_bank_statement.py:935
 #, python-format
 msgid "Bank Statement %s"
-msgstr "Hesap Özeti"
+msgstr "Hesap Özeti %s"
 
 #. module: account
 #: model:ir.model,name:account.model_account_bank_statement_line
@@ -3107,7 +3112,7 @@ msgstr "Kapat"
 #: code:addons/account/static/src/xml/account_reconciliation.xml:60
 #, python-format
 msgid "Close statement"
-msgstr ""
+msgstr "Kapalı durum"
 
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_bank_statement_date_done
@@ -10304,7 +10309,7 @@ msgid ""
 "oe-id=%d>%s</a>"
 msgstr ""
 "Bu %s şu adresten oluşturuldu: <a href=# data-oe-model=account.invoice data-"
-"oe-id=% %d %s </a>"
+"oe-id=%d>%s</a>"
 
 #. module: account
 #: model:ir.ui.view,arch_db:account.view_account_invoice_report_search

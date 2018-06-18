@@ -9,19 +9,20 @@
 # Zoriana Zaiats, 2017
 # Alina Semeniuk <alinasemeniuk1@gmail.com>, 2017
 # rontif <oleksandr.basenko@gmail.com>, 2018
+# Olga Lugova <trolka.olug@gmail.com>, 2018
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-11-30 13:11+0000\n"
 "PO-Revision-Date: 2017-11-30 13:11+0000\n"
-"Last-Translator: rontif <oleksandr.basenko@gmail.com>, 2018\n"
+"Last-Translator: Olga Lugova <trolka.olug@gmail.com>, 2018\n"
 "Language-Team: Ukrainian (https://www.transifex.com/odoo/teams/41243/uk/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Language: uk\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);\n"
 
 #. module: mail
 #: model:mail.template,body_html:mail.mail_template_data_notification_email_default
@@ -113,6 +114,92 @@ msgid ""
 "</p>\n"
 "</div>"
 msgstr ""
+"\n"
+"% set company = ctx.get('company', user.company_id)\n"
+"<div>\n"
+"% if ctx.get('has_button_access'):\n"
+"<div itemscope itemtype=\"http://schema.org/EmailMessage\">\n"
+"    <div itemprop=\"potentialAction\" itemscope itemtype=\"http://schema.org/ViewAction\">\n"
+"        <link itemprop=\"target\" href=\"${ctx['button_access']['url']}\"/>\n"
+"        <link itemprop=\"url\" href=\"${ctx['button_access']['url']}\"/>\n"
+"        <meta itemprop=\"name\" content=\"View ${ctx['model_name']}\"/>\n"
+"    </div>\n"
+"</div>\n"
+"% endif\n"
+"% if not ctx['is_discussion'] or not len(ctx['actions']) == 0 or ctx.get('has_button_access'):\n"
+"<div summary=\"o_mail_notification\" style=\"padding: 0px; width:600px;\">\n"
+"<table cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width: 600px; margin-top: 5px;\">\n"
+"<tbody><tr>\n"
+"    <td valign=\"center\">\n"
+"        % if ctx.get('has_button_access'):\n"
+"        <a href=\"${ctx['button_access']['url']}\" style=\"padding: 8px 12px; font-size: 12px; color: #FFFFFF; text-decoration: none !important; font-weight: 400; background-color: #875A7B; border: 0px solid #875A7B; border-radius:3px\">${ctx['button_access']['title']}</a>\n"
+"        % endif\n"
+"\n"
+"        % if ctx.get('has_button_follow'):\n"
+"        % if ctx.get('has_button_access'):\n"
+"           |\n"
+"        % endif\n"
+"        <a href=\"${ctx['button_follow']['url']}\" style=\"color: #875A7B; text-decoration: none !important;\">${ctx['button_follow']['title']}</a>\n"
+"        % elif ctx.get('has_button_unfollow'):\n"
+"        % if ctx.get('has_button_access'):\n"
+"           |\n"
+"        % endif\n"
+"        <a href=\"${ctx['button_unfollow']['url']}\" style=\"color: #875A7B; text-decoration: none !important;\">${ctx['button_unfollow']['title']}</a>\n"
+"        % endif\n"
+"\n"
+"        % if ctx.get('actions'):\n"
+"        % for action in ctx['actions']:\n"
+"        |\n"
+"        <a href=\"${action['url']}\" style=\"color: #875A7B; text-decoration:none !important;\">${action['title']}</a>\n"
+"        % endfor\n"
+"        % endif\n"
+"    </td>\n"
+"    <td valign=\"center\" align=\"right\">\n"
+"        <img src=\"/logo.png?company=${company.id}\" style=\"padding: 0px; margin: 0px; height: auto; max-width: 80px; max-height: 40px;\" alt=\"${company.name}\">\n"
+"    </td>\n"
+"</tr>\n"
+"<tr>\n"
+"    <td colspan=\"2\" style=\"text-align:center;\">\n"
+"        <hr width=\"100%\"\n"
+"            style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin:10px 0;\">\n"
+"        % if ctx.get('subtype') and ctx.get('subtype').internal:\n"
+"        <p style=\"background-color: #f2dede; padding: 5px; margin-bottom: 16px;\">\n"
+"            <strong>Внутрішня комунікація</strong>: Відповідь створить внутрішню примітку. Підписники не отримають оповіщення.\n"
+"        </p>\n"
+"        % endif\n"
+"    </td>\n"
+"</tr>\n"
+"</tbody></table>\n"
+"</div>\n"
+"% endif\n"
+"<div>\n"
+"    ${object.body | safe}\n"
+"</div>\n"
+"% if ctx.get('tracking'):\n"
+"    <ul>\n"
+"    % for tracking in ctx['tracking']\n"
+"        <li>${tracking[0]} : ${tracking[1]} -&gt; ${tracking[2]}</li>\n"
+"    % endfor\n"
+"    </ul>\n"
+"% endif\n"
+"\n"
+"% if ctx.get('signature'):\n"
+"    ${ctx['signature'] | safe}\n"
+"% endif\n"
+"<br/>\n"
+"<p style=\"color: #555555;\">\n"
+"    Надіслано від\n"
+"    % if ctx.get('website_url'):\n"
+"    <a href=\"${ctx['website_url']}\" style=\"text-decoration:none; color: #875A7B;\">\n"
+"    % endif\n"
+"    ${ctx.get('company_name')}\n"
+"    % if ctx.get('website_url'):\n"
+"    </a>\n"
+"    % endif\n"
+"    за допомогою\n"
+"    <a target=\"_blank\" href=\"https://www.odoo.com\" style=\"text-decoration:none; color: #875A7B;\">Odoo</a>.\n"
+"</p>\n"
+"</div>"
 
 #. module: mail
 #: code:addons/mail/models/mail_channel.py:674
@@ -125,7 +212,7 @@ msgstr ""
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_activity_type_days
 msgid "# Days"
-msgstr ""
+msgstr "# Днів"
 
 #. module: mail
 #: model:mail.template,subject:mail.mail_template_data_notification_email_default
@@ -177,7 +264,7 @@ msgstr "%s приєднався до мережі %s."
 #: code:addons/mail/static/src/xml/client_action.xml:211
 #, python-format
 msgid "&nbsp;("
-msgstr ""
+msgstr "&nbsp;("
 
 #. module: mail
 #. openerp-web
@@ -566,7 +653,7 @@ msgstr ""
 #: model:ir.model,name:mail.model_mail_activity_type
 #: model:ir.ui.view,arch_db:mail.mail_activity_view_search
 msgid "Activity Type"
-msgstr ""
+msgstr "Тип діяльності"
 
 #. module: mail
 #: model:ir.actions.act_window,name:mail.mail_activity_type_action
@@ -795,7 +882,7 @@ msgstr ""
 #. module: mail
 #: selection:mail.alias,alias_contact:0
 msgid "Authenticated Employees"
-msgstr ""
+msgstr "Авторизовані співробітники"
 
 #. module: mail
 #: selection:mail.alias,alias_contact:0
@@ -2090,7 +2177,7 @@ msgstr "Майбутні"
 #: model:ir.ui.view,arch_db:mail.mail_activity_view_search
 #: model:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
 msgid "Future Activities"
-msgstr ""
+msgstr "Майбутня діяльність"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.view_message_form
@@ -2180,7 +2267,7 @@ msgstr "Приховати підтип у параметрах підписни
 #: model:ir.model.fields,field_description:mail.field_mail_wizard_invite_id
 #: model:ir.model.fields,field_description:mail.field_publisher_warranty_contract_id
 msgid "ID"
-msgstr "ІД"
+msgstr "ID"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_alias_alias_parent_thread_id
@@ -2431,7 +2518,7 @@ msgstr "Початковий ланцюжок повідомлення."
 #: model:ir.ui.menu,name:mail.mail_channel_integrations_menu
 #: model:ir.ui.view,arch_db:mail.mail_channel_view_form
 msgid "Integrations"
-msgstr ""
+msgstr "Інтеграції"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_message_subtype_internal
@@ -2771,7 +2858,7 @@ msgstr "Запізнено"
 #: model:ir.ui.view,arch_db:mail.mail_activity_view_search
 #: model:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
 msgid "Late Activities"
-msgstr ""
+msgstr "Останні дії"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.mail_channel_view_kanban
@@ -2947,7 +3034,7 @@ msgstr "Позначити все як прочитане"
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.mail_activity_view_form_popup
 msgid "Mark as Done"
-msgstr ""
+msgstr "Позначте, як зроблено"
 
 #. module: mail
 #. openerp-web
@@ -2969,7 +3056,7 @@ msgstr "Позначити для виконання"
 #: code:addons/mail/static/src/xml/web_kanban_activity.xml:49
 #, python-format
 msgid "Mark as done"
-msgstr ""
+msgstr "Позначте як зроблено"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_channel_image_medium
@@ -3019,7 +3106,7 @@ msgstr "Повідомлення"
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_tracking_value_mail_message_id
 msgid "Message ID"
-msgstr "ІД повідомлення"
+msgstr "ID повідомлення"
 
 #. module: mail
 #: model:ir.model,name:mail.model_mail_notification
@@ -3112,7 +3199,7 @@ msgstr "Унікальний ідентифікатор повідомлення
 #: model:ir.model.fields,field_description:mail.field_mail_message_message_id
 #: model:ir.model.fields,field_description:mail.field_survey_mail_compose_message_message_id
 msgid "Message-Id"
-msgstr "ІД-повідомлення"
+msgstr "ІD-повідомлення"
 
 #. module: mail
 #: model:ir.actions.act_window,name:mail.action_view_mail_message
@@ -3244,7 +3331,7 @@ msgstr "Місяць"
 #: model:ir.ui.view,arch_db:mail.mail_activity_view_search
 #: model:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
 msgid "My Activities"
-msgstr ""
+msgstr "Мої дії"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_email_template_preview_name
@@ -3929,12 +4016,16 @@ msgid ""
 "a placeholder expression that provides the appropriate language, e.g. "
 "${object.partner_id.lang}."
 msgstr ""
+"Необов'язкова мова перекладу (ISO-код) для вибору при надсиланні "
+"електронного листа. Якщо не встановлено, буде використано англійську версію."
+" Це, як правило, має бути виразом заповнювача, який забезпечує відповідну "
+"мову, наприклад, $ {object.partner_id.lang}."
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_email_template_preview_null_value
 #: model:ir.model.fields,help:mail.field_mail_template_null_value
 msgid "Optional value to use if the target field is empty"
-msgstr ""
+msgstr "Необов'язкове значення для використання, якщо цільове поле порожнє"
 
 #. module: mail
 #: selection:mail.activity.type,category:0
@@ -4056,7 +4147,7 @@ msgstr ""
 #. module: mail
 #: model:ir.actions.act_window,name:mail.action_partner_mass_mail
 msgid "Partner Mass Mailing"
-msgstr ""
+msgstr "Партнер розсилки"
 
 #. module: mail
 #: code:addons/mail/models/res_partner.py:32
@@ -4067,7 +4158,7 @@ msgstr "Профіль партнера"
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
 msgid "Partners that did not ask not to be included in mass mailing campaigns"
-msgstr ""
+msgstr "Партнери, які не просили не бути включеними в масові кампанії"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_compose_message_needaction_partner_ids
@@ -4083,20 +4174,21 @@ msgstr "Партнер, що потребує дії"
 #: model:ir.model.fields,help:mail.field_mail_template_auto_delete
 msgid "Permanently delete this email after sending it, to save space"
 msgstr ""
+"Назавжди видаліть це повідомлення після надсилання, щоб заощадити місце"
 
 #. module: mail
 #. openerp-web
 #: code:addons/mail/static/src/js/client_action.js:891
 #, python-format
 msgid "Permission denied"
-msgstr ""
+msgstr "Дозвіл відхилено"
 
 #. module: mail
 #. openerp-web
 #: code:addons/mail/static/src/js/client_action.js:894
 #, python-format
 msgid "Permission granted"
-msgstr ""
+msgstr "Дозвіл надано"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_channel_image
@@ -4128,7 +4220,7 @@ msgstr "Вираз наповнювача"
 #: selection:stock.picking,activity_state:0
 #: selection:survey.survey,activity_state:0
 msgid "Planned"
-msgstr ""
+msgstr "Заплановано"
 
 #. module: mail
 #. openerp-web
@@ -4245,7 +4337,7 @@ msgstr "Приватні канали"
 #: code:addons/mail/static/src/js/client_action.js:848
 #, python-format
 msgid "Public Channels"
-msgstr ""
+msgstr "Публічні канали"
 
 #. module: mail
 #: model:ir.actions.server,name:mail.ir_cron_module_update_notification_ir_actions_server
@@ -4263,7 +4355,7 @@ msgstr "Re:"
 #. module: mail
 #: selection:mail.notification,email_status:0
 msgid "Ready to Send"
-msgstr ""
+msgstr "Готовий до відправлення"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.view_mail_search selection:mail.mail,state:0
@@ -4317,7 +4409,7 @@ msgstr "Посилання"
 #: model:ir.model.fields,field_description:mail.field_mail_wizard_invite_res_id
 #: model:ir.model.fields,field_description:mail.field_survey_mail_compose_message_res_id
 msgid "Related Document ID"
-msgstr ""
+msgstr "ID відповідного документа"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_email_template_preview_model
@@ -4356,6 +4448,8 @@ msgstr "Поле зв'язку"
 #: model:ir.ui.view,arch_db:mail.email_template_form
 msgid "Remove the contextual action to use this template on related documents"
 msgstr ""
+"Видаліть контекстну дію, щоб використовувати цей шаблон у відповідних "
+"документах"
 
 #. module: mail
 #. openerp-web
@@ -4496,7 +4590,7 @@ msgstr "Запланована дата"
 #: model:ir.model.fields,field_description:mail.field_mail_mail_scheduled_date
 #: model:ir.ui.view,arch_db:mail.email_template_form
 msgid "Scheduled Send Date"
-msgstr ""
+msgstr "Запланована дата надсилання"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.view_mail_alias_search
@@ -4515,6 +4609,8 @@ msgid ""
 "Select target field from the related document model.\n"
 "If it is a relationship field you will be able to select a target field at the destination of the relationship."
 msgstr ""
+"Виберіть цільове поле з відповідної моделі документа.\n"
+"Якщо це поле відносин, ви зможете обрати цільове поле в пункті призначення."
 
 #. module: mail
 #: selection:mail.channel,public:0
@@ -4572,6 +4668,9 @@ msgid ""
 "Sender address (placeholders may be used here). If not set, the default "
 "value will be the author's email alias if configured, or email address."
 msgstr ""
+"Адреса відправника (заповнювачі можуть бути використані тут). Якщо не "
+"встановлено, значення за замовчуванням буде псевдонімом автора електронної "
+"пошти, якщо його налаштовано, або адресу електронної пошти."
 
 #. module: mail
 #. openerp-web
@@ -4596,7 +4695,7 @@ msgstr "Надіслано"
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_message_res_partner_needaction_rel_is_email
 msgid "Sent by Email"
-msgstr ""
+msgstr "Надіслати електронною поштою"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_activity_type_sequence
@@ -4631,13 +4730,13 @@ msgstr "Скорочення"
 #: model:ir.ui.view,arch_db:mail.mail_activity_view_search
 #: model:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
 msgid "Show all records which has next action date is before today"
-msgstr ""
+msgstr "Показати всі записи, які мають дату наступної дії до сьогоднішньої"
 
 #. module: mail
 #: code:addons/mail/models/mail_channel.py:667
 #, python-format
 msgid "Show an helper message"
-msgstr ""
+msgstr "Показати допоміжне повідомлення"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_email_template_preview_ref_ir_act_window
@@ -4652,6 +4751,8 @@ msgid ""
 "Sidebar action to make this template available on records of the related "
 "document model"
 msgstr ""
+"Дія на бічній панелі, щоби зробити цей шаблон доступним для записів "
+"відповідної моделі документів"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_compose_message_author_avatar
@@ -4878,7 +4979,7 @@ msgstr ""
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_shortcode_substitution
 msgid "The escaped html code replacing the shortcut"
-msgstr ""
+msgstr "Вичерпаний html-код замінює ярлик"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_alias_alias_model_id
@@ -4940,7 +5041,7 @@ msgstr ""
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_shortcode_source
 msgid "The shortcut which must be replaced in the Chat Messages"
-msgstr ""
+msgstr "Ярлик, який потрібно замінити в повідомленнях чату"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_shortcode_unicode_source
@@ -4951,12 +5052,12 @@ msgstr ""
 #: model:ir.model.fields,help:mail.field_email_template_preview_model_id
 #: model:ir.model.fields,help:mail.field_mail_template_model_id
 msgid "The type of document this template can be used with"
-msgstr ""
+msgstr "Тип документу з цим шаблоном можна використовувати"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.message_origin_link
 msgid "This"
-msgstr ""
+msgstr "Це"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_channel_image
@@ -5065,6 +5166,8 @@ msgid ""
 "Tracked values are stored in a separate model. This field allow to "
 "reconstruct the tracking and to generate statistics on the model."
 msgstr ""
+"Відстежувані значення зберігаються в окремій моделі. Це поле дозволяє "
+"реконструювати відстеження та генерувати статистику по моделі."
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_ir_model_fields_track_visibility
@@ -5116,6 +5219,8 @@ msgstr ""
 #, python-format
 msgid "Unable to send email, please configure the sender's email address."
 msgstr ""
+"Не вдається відправити електронну пошту, будь-ласка, налаштуйте адресу "
+"електронної пошти відправника."
 
 #. module: mail
 #. openerp-web
@@ -5130,6 +5235,8 @@ msgstr "Відписатися"
 msgid ""
 "Unfortunately this email alias is already used, please choose a unique one"
 msgstr ""
+"На жаль, цей псевдонім електронної пошти вже використовується, будь ласка, "
+"виберіть унікальний"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_shortcode_unicode_source
@@ -5337,7 +5444,7 @@ msgstr ""
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_message_subtype_sequence
 msgid "Used to order subtypes."
-msgstr ""
+msgstr "Використовується для замовлення підтипів."
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.view_mail_alias_search
@@ -5363,7 +5470,7 @@ msgstr "Користувачі"
 #: code:addons/mail/models/mail_channel.py:711
 #, python-format
 msgid "Users in this channel: %s %s and you."
-msgstr ""
+msgstr "Користувачі в цьому каналі: %s %s та ви."
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.res_config_settings_view_form
@@ -5406,6 +5513,8 @@ msgid ""
 "When a relationship field is selected as first field, this field lets you "
 "select the target field within the destination document model (sub-model)."
 msgstr ""
+"Коли поле відносин вибирається як перше поле, це поле дозволяє вибрати "
+"цільове поле в межах моделі цільового документа (субмодель)."
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_email_template_preview_sub_object
@@ -5414,6 +5523,8 @@ msgid ""
 "When a relationship field is selected as first field, this field shows the "
 "document model the relationship goes to."
 msgstr ""
+"Коли поле взаємодії вибирається як перше поле, в цьому полі відображається "
+"модель документа, до якої відноситься зв'язок."
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_ir_model_fields_track_visibility
@@ -5427,7 +5538,7 @@ msgstr ""
 #: model:ir.model.fields,help:mail.field_mail_compose_message_is_log
 #: model:ir.model.fields,help:mail.field_survey_mail_compose_message_is_log
 msgid "Whether the message is an internal note (comment mode only)"
-msgstr ""
+msgstr "Чи повідомлення є внутрішньою нотаткою (лише для режиму коментарів)"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_ir_model_is_mail_thread
@@ -5472,13 +5583,13 @@ msgstr "Ви додали <b>%s</b> до розмови."
 #: code:addons/mail/models/mail_channel.py:708
 #, python-format
 msgid "You are alone in this channel."
-msgstr ""
+msgstr "Ви одні в цьому каналі."
 
 #. module: mail
 #: code:addons/mail/models/mail_channel.py:677
 #, python-format
 msgid "You are in a private conversation with <b>@%s</b>."
-msgstr ""
+msgstr "Ви у приватній розмові з <b>@%s</b>."
 
 #. module: mail
 #: code:addons/mail/models/mail_channel.py:672
@@ -5503,6 +5614,8 @@ msgid ""
 "You cannot create a new user from here.\n"
 " To create new user please go to configuration panel."
 msgstr ""
+"Ви не можете створити нового користувача звідси.\n"
+"Щоб створити нового користувача, перейдіть на панель налаштування."
 
 #. module: mail
 #: code:addons/mail/models/mail_channel.py:144
@@ -5511,6 +5624,8 @@ msgid ""
 "You cannot delete those groups, as the Whole Company group is required by "
 "other modules."
 msgstr ""
+"Ви не можете видалити ці групи, тому що інші групи потрібні для всієї групи "
+"компаній."
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:349
@@ -5525,7 +5640,7 @@ msgstr ""
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.message_user_assigned
 msgid "You have been assigned to the"
-msgstr ""
+msgstr "Ви були призначені для"
 
 #. module: mail
 #. openerp-web
@@ -5541,13 +5656,15 @@ msgid ""
 "You may attach files to this template, to be added to all emails created "
 "from this template"
 msgstr ""
+"Ви можете долучити файли до цього шаблону, щоб вони додавалися до всіх "
+"листів, створених за цим шаблоном"
 
 #. module: mail
 #. openerp-web
 #: code:addons/mail/static/src/js/chat_manager.js:473
 #, python-format
 msgid "You unpinned your conversation with <b>%s</b>."
-msgstr ""
+msgstr "Ви розв'язали свою бесіду <b>%s</b>."
 
 #. module: mail
 #. openerp-web
@@ -5595,7 +5712,7 @@ msgstr "від"
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.message_origin_link
 msgid "created"
-msgstr ""
+msgstr "створено"
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:315
@@ -5634,12 +5751,12 @@ msgstr "підписники"
 #: code:addons/mail/static/src/xml/activity.xml:30
 #, python-format
 msgid "for"
-msgstr ""
+msgstr "для"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.message_origin_link
 msgid "from:"
-msgstr ""
+msgstr "від:"
 
 #. module: mail
 #: model:mail.channel,name:mail.channel_all_employees
@@ -5649,7 +5766,7 @@ msgstr "загальне"
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.message_origin_link
 msgid "has been"
-msgstr ""
+msgstr "був"
 
 #. module: mail
 #: code:addons/mail/models/mail_alias.py:282
@@ -5682,13 +5799,13 @@ msgstr "mail.alias.mixin"
 #: code:addons/mail/models/mail_thread.py:943
 #, python-format
 msgid "model %s does not accept document creation"
-msgstr ""
+msgstr "модель %s не приймає документ"
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:938
 #, python-format
 msgid "model %s does not accept document update"
-msgstr ""
+msgstr "модель %sне приймає оновлення документу"
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:931
@@ -5696,16 +5813,17 @@ msgstr ""
 msgid ""
 "model %s does not accept document update, fall back on document creation"
 msgstr ""
+"модель %s не приймає оновлення документу, поверніться до створення документа"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.message_origin_link
 msgid "modified"
-msgstr ""
+msgstr "змінено"
 
 #. module: mail
 #: model:ir.ui.view,arch_db:mail.res_config_settings_view_form
 msgid "mycompany.odoo.com"
-msgstr ""
+msgstr "mycompany.odoo.com"
 
 #. module: mail
 #. openerp-web
@@ -5729,6 +5847,8 @@ msgid ""
 "posting a message without model should be with a null res_id (private "
 "message), received %s"
 msgstr ""
+"Опублікування повідомлення без моделі має містити нульовий res_id (приватне "
+"повідомлення), отримане %s"
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:917
@@ -5736,6 +5856,8 @@ msgstr ""
 msgid ""
 "posting a message without model should be with a parent_id (private message)"
 msgstr ""
+"Опублікування повідомлення без моделі має бути з parent_id (приватне "
+"повідомлення)"
 
 #. module: mail
 #: model:ir.model,name:mail.model_publisher_warranty_contract
@@ -5745,14 +5867,14 @@ msgstr "publisher_warranty.contract"
 #. module: mail
 #: model:mail.channel,name:mail.channel_3
 msgid "rd"
-msgstr ""
+msgstr "rd"
 
 #. module: mail
 #. openerp-web
 #: code:addons/mail/static/src/js/thread.js:17
 #, python-format
 msgid "read less"
-msgstr ""
+msgstr "бачити менше"
 
 #. module: mail
 #. openerp-web
@@ -5770,13 +5892,15 @@ msgstr "запис:"
 #: code:addons/mail/models/mail_thread.py:935
 #, python-format
 msgid "reply to missing document (%s,%s)"
-msgstr ""
+msgstr "відповісти на відсутній документ (%s,%s)"
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:928
 #, python-format
 msgid "reply to missing document (%s,%s), fall back on new document creation"
 msgstr ""
+"відповісти на відсутній документ (%s,%s), повернутися до створення нового "
+"документу"
 
 #. module: mail
 #: model:ir.model,name:mail.model_res_config_settings
@@ -5787,7 +5911,7 @@ msgstr "res.config.settings"
 #: code:addons/mail/models/mail_thread.py:913
 #, python-format
 msgid "resetting thread_id"
-msgstr ""
+msgstr "resetting thread_id"
 
 #. module: mail
 #: code:addons/mail/models/mail_channel.py:254
@@ -5839,4 +5963,4 @@ msgstr ""
 #: code:addons/mail/models/mail_thread.py:906
 #, python-format
 msgid "unknown target model %s"
-msgstr ""
+msgstr "невідома цільова модель %s"

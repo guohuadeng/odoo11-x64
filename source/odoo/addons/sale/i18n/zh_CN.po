@@ -17,6 +17,7 @@
 # Li Xiang <lvx5013@foxmail.com>, 2017
 # Martin Trigaux, 2017
 # waveyeung <waveyeung@qq.com>, 2017
+# Henry Zhou <zhouhenry@live.com>, 2017
 # Ted Wang <feiyuwang2012@gmail.com>, 2017
 # Gary Wei <Gary.wei@elico-corp.com>, 2017
 # xiaobin wu <bd5dml@gmail.com>, 2017
@@ -25,6 +26,7 @@
 # Si Ling Lau <happy8645@hotmail.com>, 2017
 # Jeff Yu - Elico Corp <jeff.yu@elico-corp.com>, 2017
 # 老窦 北京 <2662059195@qq.com>, 2017
+# e2f_cn c5 <jarvisn@ecinnovations.com>, 2018
 # e2f <projects@e2f.com>, 2018
 msgid ""
 msgstr ""
@@ -123,8 +125,8 @@ msgid ""
 "${(object.name or '').replace('/','_')}${object.state == 'draft' and "
 "'_draft' or ''}"
 msgstr ""
-"${(object.name or '').replace('/','_')}${object.state == 'draft' and "
-"'_draft' or ''}"
+"${(object.name or '').replace('/','_')}${object.state == 'draft' and '_草稿' "
+"or ''}"
 
 #. module: sale
 #: model:mail.template,subject:sale.email_template_edi_sale
@@ -738,7 +740,7 @@ msgstr "创建发票"
 #: model:ir.actions.act_window,help:sale.action_quotations
 #: model:ir.actions.act_window,help:sale.action_quotations_salesteams
 msgid "Create a Quotation, the first step of a new sale."
-msgstr "创建一个报价，新的销售的第一步。"
+msgstr "创建一个报价，新销售的第一步。"
 
 #. module: sale
 #: model:ir.ui.view,arch_db:sale.view_sale_advance_payment_inv
@@ -1477,9 +1479,7 @@ msgstr "一旦确认，不能再编辑订单"
 msgid ""
 "Note that once a Quotation becomes a Sales Order, it will be moved\n"
 "                from the Quotations list to the Sales Order list."
-msgstr ""
-"请注意一旦报价成为销售订单，它将\n"
-"                 从报价清单移动到销售订单清单。"
+msgstr "请注意，一旦报价成为销售订单，它将从报价单清单转移到销售订单清单。"
 
 #. module: sale
 #: model:ir.actions.act_window,help:sale.act_res_partner_2_sale_order
@@ -1487,7 +1487,7 @@ msgstr ""
 msgid ""
 "Note that once a Quotation becomes a Sales Order, it will be moved from the "
 "Quotations list to the Sales Order list."
-msgstr "请注意，一旦报价成为销售订单，它将从报价单转到销售订单清单。"
+msgstr "请注意，一旦报价成为销售订单，它将从报价单清单转移到销售订单清单。"
 
 #. module: sale
 #: selection:sale.order,invoice_status:0
@@ -2837,9 +2837,7 @@ msgstr "您的订单已经确认。"
 msgid ""
 "Your next actions should flow efficiently: confirm the Quotation\n"
 "                to a Sales Order, then create the Invoice and collect the Payment."
-msgstr ""
-"你的下一步行动应该有效：确认报价\n"
-"一个销售订单，然后创建发票和付款方式。"
+msgstr "你接下来的操作应为：确认此报价为销售订单，然后创建发票和收款。"
 
 #. module: sale
 #: model:ir.actions.act_window,help:sale.act_res_partner_2_sale_order

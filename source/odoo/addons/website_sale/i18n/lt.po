@@ -17,19 +17,20 @@
 # Naglis Jonaitis, 2018
 # Silvija Butko <silvija.butko@gmail.com>, 2018
 # Eimantas <eimantas@focusate.eu>, 2018
+# Linas Versada <paulius.sladkevicius@gmail.com>, 2018
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-02-19 13:43+0000\n"
 "PO-Revision-Date: 2018-02-19 13:43+0000\n"
-"Last-Translator: Eimantas <eimantas@focusate.eu>, 2018\n"
+"Last-Translator: Linas Versada <paulius.sladkevicius@gmail.com>, 2018\n"
 "Language-Team: Lithuanian (https://www.transifex.com/odoo/teams/41243/lt/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Language: lt\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=4; plural=(n % 10 == 1 && (n % 100 > 19 || n % 100 < 11) ? 0 : (n % 10 >= 2 && n % 10 <=9) && (n % 100 > 19 || n % 100 < 11) ? 1 : n % 1 != 0 ? 2: 3);\n"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.confirmation
@@ -697,7 +698,7 @@ msgstr ""
 #. module: website_sale
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_12
 msgid "A great Keyboard. Cordless."
-msgstr ""
+msgstr "Šauni klaviatūra. Bevielė."
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
@@ -705,6 +706,9 @@ msgid ""
 "A rounding per line is advised if your prices are tax-included. That way, "
 "the sum of line subtotals equals the total with taxes."
 msgstr ""
+"Kiekvienos eilutės sumos apvalinimas rekomenduojamas jei kainos įtraukia "
+"mokesčius. Tokiu atveju eilučių tarpinės sumos sutaps su galutine suma su "
+"mokesčiais."
 
 #. module: website_sale
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_1
@@ -950,6 +954,10 @@ msgid ""
 "codes. Specific conditions can be set (products, customers, minimum purchase"
 " amount, period). Rewards can be discounts (% or amount) or free products."
 msgstr ""
+"Padidinkite savo pardavimus su dviejų tipų nuolaidų programomis: akcijomis "
+"ir kuponų kodais. Gali būti nustatytos specialios sąlygos (produktai, "
+"klientai, minimali pirkimo vertė, laikas). Prizais gali būti nuolaidos (% "
+"arba kiekis) arba nemokami produktai."
 
 #. module: website_sale
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_14
@@ -958,7 +966,7 @@ msgstr ""
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_7
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_8
 msgid "Brilliance onscreen. And behind it."
-msgstr ""
+msgstr "Tobulumas ekrane. Ir už jo."
 
 #. module: website_sale
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_11
@@ -967,6 +975,9 @@ msgid ""
 "                                    The smooth anodized aluminum design makes iPod nano feel as good as it sounds.\n"
 "                                    And iPod nano wouldn’t be iPod nano without gorgeous, hard-to-choose-from color."
 msgstr ""
+"Mygtukai leidžia jums patogiai paleisti, sustabdyti, perjungti dainas ar pakeisti garsumą.\n"
+"Lygus aliuminio dizainas leidžia iPod Nano atrodyti taip pat gražiai, kaip jis skamba.\n"
+"iPod Nano nebūtų iPod nano be savo nuostabių spalvų, iš kurių sunku išsirinkti."
 
 #. module: website_sale
 #: model:ir.model.fields,field_description:website_sale.field_sale_order_can_directly_mark_as_paid
@@ -1150,32 +1161,32 @@ msgstr "Komponentai"
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Compute shipping costs and ship with DHL"
-msgstr ""
+msgstr "Suskaičiuoti transportavimo kainą ir siųsti per DHL"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Compute shipping costs and ship with FedEx"
-msgstr ""
+msgstr "Suskaičiuoti transportavimo kainą ir siųsti per FedEx"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Compute shipping costs and ship with UPS"
-msgstr ""
+msgstr "Suskaičiuoti transportavimo kainą ir siųsti per UPS"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Compute shipping costs and ship with USPS"
-msgstr ""
+msgstr "Suskaičiuoti transportavimo kainą ir siųsti per USPS"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Compute shipping costs and ship with bpost"
-msgstr ""
+msgstr "Suskaičiuoti transportavimo kainą ir siųsti per bpost"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Compute shipping costs on orders"
-msgstr ""
+msgstr "Skaičiuoti užsakymų siuntimo išlaidas"
 
 #. module: website_sale
 #: model:product.public.category,name:website_sale.Computer_all_in_one
@@ -1261,7 +1272,7 @@ msgstr "Šalis..."
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.website_planner
 msgid "Create your product items"
-msgstr ""
+msgstr "Sukurkite savo produkto elementus"
 
 #. module: website_sale
 #: model:ir.model.fields,field_description:website_sale.field_product_image_create_uid
@@ -1715,6 +1726,12 @@ msgid ""
 "telecommunications, and services that are electronically supplied instead of"
 " shipped. Gift cards sent online are not included in the definition."
 msgstr ""
+"Jei parduodate skaitmenines prekes ES klientams, Jūs privalote taikyti PVM "
+"priklausomai nuo kliento lokacijos. Ši taisyklė galioja nepriklausomai nuo "
+"Jūsų lokacijos. Skaitmeniniės prekės yra apibrėžiamos įstatymų kaip "
+"transliacijos, telekomunikacija ir paslaugos, kurios yra pateikiamos "
+"elektroniniu būdu, o ne fiziškai pristatomos. Dovanų kortelės, siunčiamos "
+"elektroniniu  būdu neįeina į skaitmeninių prekių apibrėžimą."
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.terms
@@ -1831,7 +1848,7 @@ msgstr ""
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_7
 #: model:sale.order.line,website_description:website_sale.website_sale_order_line_8
 msgid "Key Features"
-msgstr ""
+msgstr "Pagrandinės savybės"
 
 #. module: website_sale
 #: model:product.public.category,name:website_sale.Keyboard_Mouse
@@ -1878,7 +1895,7 @@ msgstr "Paskutinį kartą atnaujinta"
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.sale_report_view_search_website
 msgid "Last Week"
-msgstr ""
+msgstr "Praėjusi savaitė"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.sale_report_view_search_website
@@ -2113,7 +2130,7 @@ msgstr ""
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.website_planner
 msgid "Online users: we do it for you!"
-msgstr ""
+msgstr "Interneto vartotojai: mes tai darome jums!"
 
 #. module: website_sale
 #: model:ir.model.fields,field_description:website_sale.field_sale_order_only_services
@@ -2336,7 +2353,7 @@ msgstr "Kainodara"
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.website_planner
 msgid "Pricing &amp; Discounts"
-msgstr ""
+msgstr "Kainodara ir nuolaidos"
 
 #. module: website_sale
 #: model:product.public.category,name:website_sale.printer
@@ -2362,7 +2379,7 @@ msgstr "Produkto atributas"
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Product Catalog"
-msgstr ""
+msgstr "Produktų katalogas"
 
 #. module: website_sale
 #: model:ir.model.fields,field_description:website_sale.field_res_config_settings_module_website_sale_comparison
@@ -2642,7 +2659,7 @@ msgstr "Pardavimai"
 #: model:ir.model.fields,field_description:website_sale.field_website_salesteam_id
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Sales Channel"
-msgstr ""
+msgstr "Pardavimo kanalas"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.sale_report_view_pivot_website
@@ -2728,7 +2745,7 @@ msgstr "Pasirinkti šį adresą"
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.website_planner
 msgid "Select your pricing preference and allow discounts"
-msgstr ""
+msgstr "Pasirinkite savo kainodaros pageidavimus ir leiskite nuolaidas"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.website_planner
@@ -2830,12 +2847,12 @@ msgstr "Pristatymo adresas"
 #: model:ir.model.fields,field_description:website_sale.field_res_config_settings_module_website_sale_delivery
 #: model:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
 msgid "Shipping Costs"
-msgstr ""
+msgstr "Pristatymo kaštai"
 
 #. module: website_sale
 #: model:ir.model.fields,field_description:website_sale.field_res_config_settings_sale_delivery_settings
 msgid "Shipping Management"
-msgstr ""
+msgstr "Siuntimo valdymas"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.products
@@ -3290,6 +3307,8 @@ msgstr ""
 #: model:ir.ui.view,arch_db:website_sale.website_planner
 msgid "Use our import templates to get your catalog ready in no time!"
 msgstr ""
+"Naudokite mūsų importavimo šablonus, kad paruoštumėte savo katalogą "
+"akimirksniu!"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.cart_popover
@@ -3489,7 +3508,7 @@ msgstr "Jūsų krepšelis tuščias!"
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.payment_confirmation_status
 msgid "Your payment has been authorized."
-msgstr ""
+msgstr "Jūsų mokėjimas buvo patvirtintas."
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.cart

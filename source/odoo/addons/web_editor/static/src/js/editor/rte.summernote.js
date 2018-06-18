@@ -395,7 +395,7 @@ eventHandler.modules.imageDialog.showImageDialog = function ($editable) {
         $editable: $editable,
         media: media,
         options : {
-            onUpload: $editable.data('callbacks').onImageUpload,
+            onUpload: $editable.data('callbacks').onUpload,
         },
     });
     return new $.Deferred().reject();
@@ -472,7 +472,7 @@ function prettify_html(html) {
             while (i--) space += '  ';
             return space;
         },
-        reg = /^<\/?(a|span|font|strong|u|i|strong|b)(\s|>)/i,
+        reg = /^<\/?(a|span|font|u|em|i|strong|b)(\s|>)/i,
         inline_level = Infinity,
         tokens = _.compact(_.flatten(_.map(html.split(/</), function (value) {
             value = value.replace(/\s+/g, ' ').split(/>/);
@@ -673,7 +673,7 @@ function summernote_mousedown(event) {
         return;
     }
     var editables = $(".o_editable[contenteditable], .note-editable[contenteditable]");
-    var r_editable = editables.has((r||{}).sc);
+    var r_editable = editables.has((r||{}).sc).addBack(editables.filter((r||{}).sc));
     if (!r_editable.closest('.note-editor').is($editable) && !r_editable.filter('.o_editable').is(editables)) {
         var saved_editable = editables.has((remember_selection||{}).sc);
         if ($editable.length && !saved_editable.closest('.o_editable, .note-editor').is($editable)) {

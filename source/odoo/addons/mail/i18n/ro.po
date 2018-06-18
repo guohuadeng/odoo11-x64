@@ -999,7 +999,7 @@ msgstr "Canale/Partener"
 #: model:ir.actions.client,name:mail.mail_channel_action_client_chat
 #, python-format
 msgid "Chat"
-msgstr "Chat"
+msgstr "Conversație"
 
 #. module: mail
 #: selection:mail.channel,channel_type:0
@@ -1325,7 +1325,7 @@ msgstr "Implicit"
 #: model:ir.model.fields,field_description:mail.field_email_template_preview_null_value
 #: model:ir.model.fields,field_description:mail.field_mail_template_null_value
 msgid "Default Value"
-msgstr "Valoarea implicită"
+msgstr "Valoare implicită"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_alias_alias_defaults
@@ -3255,7 +3255,7 @@ msgstr ""
 #: code:addons/mail/static/src/xml/client_action.xml:137
 #, python-format
 msgid "New Message"
-msgstr ""
+msgstr "Mesaj nou"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_tracking_value_new_value_char
@@ -3825,7 +3825,7 @@ msgstr ""
 #: code:addons/mail/static/src/xml/client_action.xml:187
 #, python-format
 msgid "Open chat"
-msgstr ""
+msgstr "Deschide conversație"
 
 #. module: mail
 #. openerp-web
@@ -5397,7 +5397,7 @@ msgstr "Scrie o observație"
 #: code:addons/mail/static/src/xml/composer.xml:12
 #, python-format
 msgid "Write something..."
-msgstr "Scriere ceva..."
+msgstr "Scrie ceva..."
 
 #. module: mail
 #. openerp-web

@@ -10,10 +10,10 @@
 # Mathias Neef <mn@copado.de>, 2017
 # Rudolf Schnapka <rs@techno-flex.de>, 2017
 # Felix Schubert <felix.schubert@go-erp.com>, 2017
-# Ermin Trevisan <trevi@twanda.com>, 2017
 # Philipp Hug <philipp@hug.cx>, 2017
 # Winfried Grieb <inactive+wigrieb@transifex.com>, 2017
 # Anja Funk <anja.funk@afimage.de>, 2017
+# Ermin Trevisan <trevi@twanda.com>, 2017
 # JackTheHunter <Maximilian.N98@gmail.com>, 2017
 # darenkster <inactive+darenkster@transifex.com>, 2017
 # jonas <jonas.hillebrecht@bklynsoap.com>, 2017
@@ -334,6 +334,50 @@ msgid ""
 "</p>\n"
 "</div>"
 msgstr ""
+"<div>\n"
+"<p>Hallo ${object.partner_id.name}\n"
+"% set access_action = object.with_context(force_website=True).get_access_action()\n"
+"% set is_online = access_action and access_action['type'] == 'ir.actions.act_url'\n"
+"% set access_url = object.get_mail_url()\n"
+"\n"
+"% if object.partner_id.parent_id:\n"
+"    (<i>${object.partner_id.parent_id.name}</i>)\n"
+"% endif\n"
+",</p>\n"
+"<p>hier im Anhang finden Sie Ihre\n"
+"% if object.number:\n"
+"Rechnung <strong>${object.number}</strong>\n"
+"% else:\n"
+"Rechnung\n"
+"% endif\n"
+"% if object.origin:\n"
+"(mit Referenz: ${object.origin})\n"
+"% endif\n"
+"mit einem Betrag von <strong>${format_amount(object.amount_total, object.currency_id)}</strong>\n"
+"from ${object.company_id.name}.\n"
+"</p>\n"
+"\n"
+"% if is_online:\n"
+"    <br/><br/>\n"
+"    <center>\n"
+"      <a href=\"${access_url}\" style=\"background-color: #1abc9c; padding: 20px; text-decoration: none; color: #fff; border-radius: 5px; font-size: 16px;\" class=\"o_default_snippet_text\">Rechnung anzeigen</a>\n"
+"    </center>\n"
+"% endif\n"
+"    <br/><br/>\n"
+"\n"
+"% if object.state=='paid':\n"
+"    <p>Diese Rechnung ist bereits bezahlt.</p>\n"
+"% else:\n"
+"    <p>Bitte führen Sie die Zahlung so bald wie möglich durch.</p>\n"
+"% endif\n"
+"\n"
+"<p>Danke,</p>\n"
+"<p style=\"color:#888888\">\n"
+"% if object.user_id and object.user_id.signature:\n"
+"    ${object.user_id.signature | safe}\n"
+"% endif\n"
+"</p>\n"
+"</div>"
 
 #. module: account
 #: model:ir.ui.view,arch_db:account.account_planner
@@ -802,7 +846,7 @@ msgstr "<strong>Von</strong>"
 #: model:ir.ui.view,arch_db:account.portal_invoice_report
 #: model:ir.ui.view,arch_db:account.report_invoice_document
 msgid "<strong>Invoice Date:</strong>"
-msgstr "<strong>Rechn.Datum:</strong>"
+msgstr "<strong>Rechnungsdatum:</strong>"
 
 #. module: account
 #: model:ir.ui.view,arch_db:account.report_journal
@@ -4996,7 +5040,7 @@ msgid ""
 "reports and so, match this analysis to your needs."
 msgstr ""
 "Durch diesen Bericht erhalten Sie einen Überblick über die Abrechnungen "
-"Ihrer Lieferanten. Das Suche + Filter Tool kann zur weiteren, individuell "
+"Ihrer Lieferanten. Das Such + Filter Tool kann zur weiteren, individuell "
 "angepassten Analyse genutzt werden."
 
 #. module: account
@@ -8160,7 +8204,7 @@ msgstr "+ Sonstige betriebliche Erträge"
 #: model:ir.ui.view,arch_db:account.setup_opening_move_wizard_form
 #: model:ir.ui.view,arch_db:account.view_move_form
 msgid "Post"
-msgstr "Beitrag"
+msgstr "Buchen"
 
 #. module: account
 #: model:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view

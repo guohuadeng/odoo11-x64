@@ -832,6 +832,10 @@ odoo/addons/account_invoicing/views/account_invoicing_templates.xml
 odoo/addons/account_invoicing/views/account_invoicing_views.xml
 odoo/addons/account_invoicing/views/account_menuitem_views.xml
 odoo/addons/account_invoicing/views/product_template_views.xml
+odoo/addons/account_lock/__init__.py
+odoo/addons/account_lock/__manifest__.py
+odoo/addons/account_lock/models/__init__.py
+odoo/addons/account_lock/models/res_company.py
 odoo/addons/account_payment/__init__.py
 odoo/addons/account_payment/__manifest__.py
 odoo/addons/account_payment/controllers/__init__.py
@@ -2381,6 +2385,7 @@ odoo/addons/base_address_city/views/res_city_view.xml
 odoo/addons/base_address_city/views/res_country_view.xml
 odoo/addons/base_address_extended/__init__.py
 odoo/addons/base_address_extended/__manifest__.py
+odoo/addons/base_address_extended/data/base_address_extended_data.xml
 odoo/addons/base_address_extended/i18n/af.po
 odoo/addons/base_address_extended/i18n/am.po
 odoo/addons/base_address_extended/i18n/ar.po
@@ -12618,6 +12623,7 @@ odoo/addons/product/tests/__init__.py
 odoo/addons/product/tests/common.py
 odoo/addons/product/tests/test_pricelist.py
 odoo/addons/product/tests/test_product_pricelist.py
+odoo/addons/product/tests/test_seller.py
 odoo/addons/product/tests/test_uom.py
 odoo/addons/product/tests/test_variants.py
 odoo/addons/product/views/product_attribute_views.xml
@@ -13881,7 +13887,6 @@ odoo/addons/sale_crm/i18n/es_AR.po
 odoo/addons/sale_crm/i18n/es_BO.po
 odoo/addons/sale_crm/i18n/es_CL.po
 odoo/addons/sale_crm/i18n/es_CO.po
-odoo/addons/sale_crm/i18n/es_CR.po
 odoo/addons/sale_crm/i18n/es_DO.po
 odoo/addons/sale_crm/i18n/es_EC.po
 odoo/addons/sale_crm/i18n/es_PE.po
@@ -16477,6 +16482,7 @@ odoo/addons/web/static/lib/qweb/qweb-test-global.xml
 odoo/addons/web/static/lib/qweb/qweb-test-output.xml
 odoo/addons/web/static/lib/qweb/qweb-test-set.xml
 odoo/addons/web/static/lib/qweb/qweb-test-utf8tags.xml
+odoo/addons/web/static/lib/qweb/qweb-test-widgets.xml
 odoo/addons/web/static/lib/qweb/qweb-test.js.html
 odoo/addons/web/static/lib/qweb/qweb.js
 odoo/addons/web/static/lib/qweb/qweb2.js
@@ -17566,8 +17572,10 @@ odoo/addons/website/static/src/xml/website.share.xml
 odoo/addons/website/static/src/xml/website.xml
 odoo/addons/website/static/tests/website_tests.js
 odoo/addons/website/tests/__init__.py
+odoo/addons/website/tests/template_qweb_test.xml
 odoo/addons/website/tests/test_converter.py
 odoo/addons/website/tests/test_crawl.py
+odoo/addons/website/tests/test_qweb.py
 odoo/addons/website/tests/test_ui.py
 odoo/addons/website/tests/test_views.py
 odoo/addons/website/views/ir_actions_views.xml
@@ -17707,7 +17715,6 @@ odoo/addons/website_crm/i18n/es.po
 odoo/addons/website_crm/i18n/es_AR.po
 odoo/addons/website_crm/i18n/es_CL.po
 odoo/addons/website_crm/i18n/es_CO.po
-odoo/addons/website_crm/i18n/es_CR.po
 odoo/addons/website_crm/i18n/es_DO.po
 odoo/addons/website_crm/i18n/es_EC.po
 odoo/addons/website_crm/i18n/es_PA.po
