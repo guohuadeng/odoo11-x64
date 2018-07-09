@@ -2,12 +2,12 @@
 # http://www.jetbrains.com/pycharm/webhelp/project.html
 .idea
 .iml
-/file
 /odoofile
 .log
 /addons_ent
 /addons_ent_remove
 /myaddons
+/mypackage
 /myconf
 odoo-server.log
 app.conf
