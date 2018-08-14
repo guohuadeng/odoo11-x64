@@ -11,7 +11,7 @@ http://www.sunpop.cn/odoo11_fast_x64_download/
 1. python 3.5.2 ,64位
 2. postgresql 9.6.4 ,64位
 3. Nginx 1.12.1， 32位
-4. Odoo 11，2018618版本。
+4. Odoo 11，20180814版本。
 
 ## 操作说明
 - 执行 r.bat后，访问 http://localhost:8011  或者  http://localhost
@@ -22,6 +22,7 @@ http://www.sunpop.cn/odoo11_fast_x64_download/
 
 ## 文件说明
 ```
+\source odoo源码目录，可在 https://github.com/odoo/odoo/archive/11.0.zip 下载最新版覆盖当前版本
 r.bat   最常用，直接启动（如果当前有进程则先关闭再启动）
 start.bat 启动（不管是否有当前进程在跑）
 s.bat 停止

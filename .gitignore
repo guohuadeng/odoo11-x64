@@ -2,6 +2,7 @@
 # http://www.jetbrains.com/pycharm/webhelp/project.html
 .idea
 .iml
+.bak
 /odoofile
 .log
 /addons_ent
@@ -9,6 +10,7 @@
 /myaddons
 /mypackage
 /myconf
+/oca
 odoo-server.log
 app.conf
 odoofile/filestore
