@@ -11,14 +11,15 @@ http://www.sunpop.cn/odoo11_fast_x64_download/
 1. python 3.5.2 ,64位
 2. postgresql 9.6.4 ,64位
 3. Nginx 1.12.1， 32位
-4. Odoo 11，20180814版本。
+4. Odoo 11，201809044版本。
 
 ## 操作说明
 - 执行 r.bat后，访问 http://localhost:8011  或者  http://localhost
 - 系统已有默认数据库 demo，
 - 登录用户/密码:  admin/admin
 - 如多版本并存，请自行调整nginx的映射端口
-- 如要更新至最新odoo，请至官方下载后覆盖 ./source 目录下文件即可 https://github.com/odoo/odoo
+- 如要更新至最新odoo，请至官方下载后覆盖 ./source 目录下文件即可 
+- 下载地址 https://codeload.github.com/odoo/odoo/zip/11.0
 
 ## 文件说明
 ```
