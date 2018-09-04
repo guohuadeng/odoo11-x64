@@ -64,6 +64,10 @@ pip3 install .\extra\pyldap-2.4.45-cp35-cp35m-win_amd64.whl
 pip3 install .\extra\reportlab-3.4.0-cp35-cp35m-win_amd64.whl
 pip3 install .\extra\Werkzeug-0.14.1-py2.py3-none-any.whl
 pip3 install .\extra\pywin32-223-cp35-cp35m-win_amd64.whl
+pip3 install .\extra\psycopg2-2.7.4-cp35-cp35m-win_amd64.whl
+pip3 install .\extra\wandex-0.4.5-py3-none-any.whl
+pip3 install .\extra\imageio-2.3.0-py2.py3-none-any.whl
+pip3 install .\extra\moviepy-0.2.3.5-py2.py3-none-any.whl
 ```
 ## 安装npm相关
 ```
