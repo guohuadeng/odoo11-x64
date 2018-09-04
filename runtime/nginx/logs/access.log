@@ -647,3 +647,6 @@
 127.0.0.1 - - [09/Jul/2018:23:18:04 +0800] "POST /web/dataset/call_kw/res.company/read HTTP/1.1" 200 490 "http://localhost/web/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36"
 127.0.0.1 - - [09/Jul/2018:23:18:04 +0800] "GET /web/image?model=res.company&id=1&field=logo&unique=20180709231804 HTTP/1.1" 200 37944 "http://localhost/web/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36"
 127.0.0.1 - - [09/Jul/2018:23:18:07 +0800] "GET /web/binary/company_logo?db=demo&company=1&t=1531149487205 HTTP/1.1" 200 8421 "http://localhost/web/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36"
+127.0.0.1 - - [04/Sep/2018:02:51:14 +0800] "GET / HTTP/1.1" 500 291 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"
+127.0.0.1 - - [04/Sep/2018:02:52:36 +0800] "GET / HTTP/1.1" 500 291 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"
+127.0.0.1 - - [04/Sep/2018:02:53:36 +0800] "GET / HTTP/1.1" 500 291 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"

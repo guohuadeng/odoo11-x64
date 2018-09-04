@@ -26,6 +26,8 @@ msgid ""
 "A goal is defined by a user and a goal type.\n"
 "                    Goals can be created automatically by using challenges."
 msgstr ""
+"Дадена цел се определя от потребител и вид на целта.\n"
+"                    Цели могат да се създават автоматично чрез използването на предизвикателства."
 
 #. module: hr_gamification
 #: model:ir.model.fields,help:hr_gamification.field_hr_employee_badge_ids
@@ -135,7 +137,7 @@ msgstr ""
 #: model:ir.actions.act_window,name:hr_gamification.goals_menu_groupby_action2
 #: model:ir.ui.menu,name:hr_gamification.gamification_goal_menu_hr
 msgid "Goals History"
-msgstr ""
+msgstr "История на целите"
 
 #. module: hr_gamification
 #: model:ir.ui.view,arch_db:hr_gamification.hr_hr_employee_view_form
