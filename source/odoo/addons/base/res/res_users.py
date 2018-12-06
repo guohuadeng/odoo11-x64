@@ -449,6 +449,8 @@ class Users(models.Model):
     @api.model
     def check_credentials(self, password):
         """ Override this method to plug additional authentication methods"""
+        if not password:
+            raise AccessDenied()
         user = self.sudo().search([('id', '=', self._uid), ('password', '=', password)])
         if not user:
             raise AccessDenied()
@@ -947,9 +949,12 @@ class UsersView(models.Model):
         # add reified groups fields
         for app, kind, gs in self.env['res.groups'].sudo().get_groups_by_application():
             if kind == 'selection':
+                field_name = name_selection_groups(gs.ids)
+                if allfields and field_name not in allfields:
+                    continue
                 # selection group field
                 tips = ['%s: %s' % (g.name, g.comment) for g in gs if g.comment]
-                res[name_selection_groups(gs.ids)] = {
+                res[field_name] = {
                     'type': 'selection',
                     'string': app.name or _('Other'),
                     'selection': [(False, '')] + [(g.id, g.name) for g in gs],
@@ -960,7 +965,10 @@ class UsersView(models.Model):
             else:
                 # boolean group fields
                 for g in gs:
-                    res[name_boolean_group(g.id)] = {
+                    field_name = name_boolean_group(g.id)
+                    if allfields and field_name not in allfields:
+                        continue
+                    res[field_name] = {
                         'type': 'boolean',
                         'string': g.name,
                         'help': g.comment,
